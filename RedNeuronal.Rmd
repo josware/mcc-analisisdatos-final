@@ -102,9 +102,15 @@ Comparar
 compare.output <-  cbind(alumnos.test$beca, alumnos.training$beca,nn.result$net.result)
 colnames(compare.output) <- c("entrada","valor.correcto","prediccion")
 compare.output
-compare.output$error <- compare.output$valor.correcto - compare.output$prediccion
+#compare.output$error <- compare.output$valor.correcto - compare.output$prediccion
 compare.output
 ```
 
+## Identificacion de desertores ##
+ 
+```{r}
+
+```
+ 
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
