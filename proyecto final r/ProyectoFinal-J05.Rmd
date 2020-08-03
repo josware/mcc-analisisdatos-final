@@ -5,7 +5,11 @@ output: html_notebook
 ```{r}
 #Modificar variable para especificar directorio del Proyecto Final
 #local.path <- "/Users/akcasill/Downloads"
-local.path <- "/Users/jos/Downloads"
+
+user.path <- "/Users/jos/Downloads/"
+
+local.path <- paste(user.path ,"mcc-ad/data",sep = "")
+local.path.imgs <- paste(user.path ,"mcc-ad/imgs",sep = "")
 ```
 
 
@@ -386,7 +390,7 @@ plot(1:centroides.alumnos  , wss.alumnos , type="b", xlab="Numer de clusters", y
 
 ### Analísis de hombro, brazo, codo para seleccionar el centroide
 ```{r}
-imgPath.codo <- paste(local.path,"/Kmeans-codo-alumnos.png",sep = "")
+imgPath.codo <- paste(local.path.imgs,"/Kmeans-codo-alumnos.png",sep = "")
 
 
 img.codo.alumnos <- readPNG(imgPath.codo)
@@ -406,7 +410,7 @@ plot(1:centroides.alumnos  , wss.alumnos , type="b", xlab="Numer de clusters", y
 ```
 
 ```{r}
-imgPath.codo.seleccionado <- paste(local.path,"/Kmeans-codo-alumnos-seleccionado.png",sep = "")
+imgPath.codo.seleccionado <- paste(local.path.imgs,"/Kmeans-codo-alumnos-seleccionado.png",sep = "")
 
 
 img.codo.sel.alumnos <- readPNG(imgPath.codo.seleccionado)
@@ -417,7 +421,9 @@ rasterImage(img.codo.sel.alumnos,0,0,1,1)
 
 
 ```{r}
-clustering.kmeans <- kmeans(x=alumnos.training, centers = 4)
+
+centroides.alumnos <- 4
+clustering.kmeans <- kmeans(x=alumnos.training, centers = centroides.alumnos)
 clustering.kmeans$withinss
 ```
 
@@ -430,52 +436,78 @@ sum(is.na(alumnos.training))
 #str(alumnos.training)
 ```
 
+```{r}
+datos.alumnos.df$genero <- as.numeric(datos.alumnos.df$genero)
+datos.alumnos.df$edad.ingreso <- as.numeric(datos.alumnos.df$edad.ingreso)
+datos.alumnos.df$BECA <- as.numeric(datos.alumnos.df$BECA)
+datos.alumnos.df$evalucion.socioeconomica <- as.numeric(datos.alumnos.df$evalucion.socioeconomica)
+str(datos.alumnos.df)
+
+#ds.test <- data.frame()
+#ds.test <- cbind(datos.alumnos.df$genero, datos.alumnos.df$CM1)
+#str(ds.test)
+```
 
 ```{r}
+sum(datos.alumnos.df$AM11)
+colnames(datos.alumnos.df)
+#AM1 out
+```
+
+
+
+```{r}
+#ds <- datos.alumnos.df
+#ds.test <- data.frame()
+#ds.test <- cbind(ds$genero, ds$admision.letras, ds$admision.numeros, ds$promedio.preparatoria, ds$edad.ingreso, ds$evalucion.socioeconomica, ds$nota.conducta, ds$BECA, ds$AM1 )
+ds.data.analisis <- datos.alumnos.df
+ds.data.analisis$AM1 <- NULL
+
+
+dataframe.to.cor <- ds.data.analisis
+
 library(corrplot)
 source("http://www.sthda.com/upload/rquery_cormat.r")
-rquery.cormat(alumnos.training)
+rquery.cormat(dataframe.to.cor)
 
 col<- colorRampPalette(c("blue", "white", "red"))(20)
 # create device
 ?jpeg
-jpeg('correlacioneslab.jpg', width=1200, height=800)
-rquery.cormat(alumnos.training, type="full", col=col)
+jpeg('correlacion-alumnos-ad.jpg', width=1920, height=1080)
+rquery.cormat(dataframe.to.cor, type="full", col=col)
 dev.off()
-cormat<-rquery.cormat(alumnos.training, type="full", col=col)
+cormat<-rquery.cormat(dataframe.to.cor, type="full", col=col)
 
 
 ```
 
 
 ```{r}
-set.seed(2020)
-kmea<- kmeans(mi.iris[,c("Petal.Length", "Petal.Width")], 3)
+plot.relaciones <- function(x="", y=""){
+  alumnos.training$cluster <- clustering.kmeans$cluster
+#plot(alumnos.training)
+plot(alumnos.training[,c(x, y) ], 
+     col = clustering.kmeans$cluster)
+}
+```
 
-attributes(kmeans.3)
-kmeans.3$centers
-kmeans.3$cluster
-kmeans.3$size
-str(mi.iris)
-mi.iris$cluster <- kmeans.3$cluster
-head(mi.iris)
+```{r}
+plot.relaciones("BECA", "evalucion.socioeconomica")
+```
 
-plot(mi.iris)
+```{r}
+plot.relaciones("PDM1", "PSEM1")
+```
+
+```{r}
+plot.relaciones("VBM1", "PSEM1")
 ```
 
 
 ```{r}
-plot(clustering.kmeans[,c("Petal.Length", "Petal.Width") ], 
-     col = kmeans.3$cluster)
-
-points(kmeans.3$centers[,c("Petal.Length", "Petal.Width")],
-       col = 1:3,
-       pch = 4, cex=2) 
+plot(alumnos.training[,c("VBM1", "PSEM1") ], 
+     col = 1:3)
 ```
-
-
-
-
 
 
 
