@@ -39,7 +39,15 @@ library(corrplot)
 ``` r
 source("http://www.sthda.com/upload/rquery_cormat.r")
 col<- colorRampPalette(c("blue", "white", "red"))(20)
+#install.packages("factoextra")
+#install.packages("FactoMineR")
+library(FactoMineR)
+library(factoextra)
 ```
+
+    ## Loading required package: ggplot2
+
+    ## Welcome! Want to learn more? See two factoextra-related books at https://goo.gl/ve3WBa
 
 Cargamos los datos integrados
 
@@ -85,6 +93,9 @@ head(alumnos.gen,5)
 ``` r
 alumnos.nuevos <- datos.integrados.df[alumnos.gen==1,]
 alumnos.actuales <- datos.integrados.df[alumnos.gen==0,]
+setwd(local.path)
+save(alumnos.nuevos, file="alumnos.nuevos.R")
+save(alumnos.actuales, file="alumnos.actuales.R")
 
 #alumnos.nuevos
 head(alumnos.nuevos,5)
@@ -250,6 +261,9 @@ head(alumnos.sep,3)
 ``` r
 alumnos.training <- alumnos.actuales[alumnos.sep==0,]
 alumnos.test <- alumnos.actuales[alumnos.sep==1,]
+setwd(local.path)
+save(alumnos.training, file="alumnos.training.R")
+save(alumnos.test, file="alumnos.test.R")
 
 str(alumnos.training)
 ```
@@ -855,6 +869,44 @@ summary(km.out)
     ## ifault         1    -none- numeric
 
 ``` r
+attributes(km.out)
+```
+
+    ## $names
+    ## [1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss"
+    ## [6] "betweenss"    "size"         "iter"         "ifault"      
+    ## 
+    ## $class
+    ## [1] "kmeans"
+
+``` r
+km.out$size
+```
+
+    ## [1] 175 237 201
+
+``` r
+km.out$centers
+```
+
+    ##     genero admision.letras admision.numeros promedio.preparatoria edad.ingreso
+    ## 1 1.582857        59.30549         33.61098              70.08715     7.245714
+    ## 2 1.624473        56.54376         28.08752              63.71571     6.130802
+    ## 3 1.592040        64.99004         44.98009              84.52283     9.517413
+    ##   evalucion.socioeconomica nota.conducta     beca Asist.Total prom.trab
+    ## 1                 3.480000      15.24571 1.137143   0.9264435  14.64532
+    ## 2                 3.485232      14.13080 1.164557   0.8808292  12.89741
+    ## 3                 3.502488      17.48259 1.139303   0.8894395  13.15051
+    ##   prom.exam prom.pagos prom.uso.biblio uso.biblio prom.uso.platf uso.platf
+    ## 1  14.62702  0.9057143        29.18286   8.542857       69.32143  8.542857
+    ## 2  12.87055  1.5648734        18.16842   3.350211       42.43776  3.350211
+    ## 3  13.12361  1.6082090        19.56426   4.194030       45.64635  4.194030
+    ##   prom.apartado.libros cambio.carrera
+    ## 1             2.130000       1.091429
+    ## 2             1.324895       1.122363
+    ## 3             1.433250       1.094527
+
+``` r
 # Print the cluster membership component of the model
 km.out$cluster
 ```
@@ -1051,6 +1103,63 @@ km.out
     ## 
     ## [1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss"
     ## [6] "betweenss"    "size"         "iter"         "ifault"
+
+## PCA
+
+``` r
+res.pca <- PCA(alumnos.training, graph = FALSE)
+fviz_screeplot (res.pca, addlabels = TRUE, ylim = c (0, 50))
+```
+
+![](figure/imgs/README_figs/README-unnamed-chunk-21-1.png)<!-- -->
+
+``` r
+# Extraer los resultados por variables.
+var <- get_pca_var (res.pca)
+
+# Aportaciones de variables a PC1
+fviz_contrib (res.pca, choice = "var", axes = 1)
+```
+
+![](figure/imgs/README_figs/README-unnamed-chunk-22-1.png)<!-- -->
+
+``` r
+# Aportaciones de variables a PC2
+fviz_contrib (res.pca, choice = "var", axes = 2)
+```
+
+![](figure/imgs/README_figs/README-unnamed-chunk-22-2.png)<!-- -->
+
+``` r
+# Aportaciones de variables a PC10
+fviz_contrib (res.pca, choice = "var", axes = 3)
+```
+
+![](figure/imgs/README_figs/README-unnamed-chunk-22-3.png)<!-- -->
+
+``` r
+# Controlar los colores variables utilizando sus aportaciones al eje principal.
+fviz_pca_var (res.pca, col.var = "contrib",
+gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
+                  repel = TRUE # Evita la superposición de texto
+                  ) + theme_minimal () + ggtitle ("Variables - PCA")
+```
+
+![](figure/imgs/README_figs/README-unnamed-chunk-22-4.png)<!-- -->
+
+## Mostrar los Clusters
+
+``` r
+p1 <- fviz_cluster(km.out, data = alumnos.training, frame.type = "convex") + theme_minimal () + ggtitle ("k = 3")
+```
+
+    ## Warning: argument frame is deprecated; please use ellipse instead.
+
+    ## Warning: argument frame.type is deprecated; please use ellipse.type instead.
+
+``` r
+#plot_grid(p1)
+```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to
 prevent printing of the R code that generated the plot.

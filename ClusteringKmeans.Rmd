@@ -37,6 +37,10 @@ library(png)
 library(corrplot)
 source("http://www.sthda.com/upload/rquery_cormat.r")
 col<- colorRampPalette(c("blue", "white", "red"))(20)
+#install.packages("factoextra")
+#install.packages("FactoMineR")
+library(FactoMineR)
+library(factoextra)
 ```
 
 Cargamos los datos integrados
@@ -62,6 +66,9 @@ head(alumnos.gen,5)
 
 alumnos.nuevos <- datos.integrados.df[alumnos.gen==1,]
 alumnos.actuales <- datos.integrados.df[alumnos.gen==0,]
+setwd(local.path)
+save(alumnos.nuevos, file="alumnos.nuevos.R")
+save(alumnos.actuales, file="alumnos.actuales.R")
 
 #alumnos.nuevos
 head(alumnos.nuevos,5)
@@ -88,6 +95,9 @@ head(alumnos.sep,3)
 
 alumnos.training <- alumnos.actuales[alumnos.sep==0,]
 alumnos.test <- alumnos.actuales[alumnos.sep==1,]
+setwd(local.path)
+save(alumnos.training, file="alumnos.training.R")
+save(alumnos.test, file="alumnos.test.R")
 
 str(alumnos.training)
 summary(alumnos.training)
@@ -197,6 +207,12 @@ summary(km.out)
 ```
 
 ```{r}
+attributes(km.out)
+km.out$size
+km.out$centers
+```
+
+```{r}
 # Print the cluster membership component of the model
 km.out$cluster
 ```
@@ -205,6 +221,41 @@ km.out$cluster
 ```{r}
 # Print the km.out object
 km.out
+```
+
+
+## PCA ##
+```{r}
+res.pca <- PCA(alumnos.training, graph = FALSE)
+fviz_screeplot (res.pca, addlabels = TRUE, ylim = c (0, 50))
+```
+
+```{r}
+# Extraer los resultados por variables.
+var <- get_pca_var (res.pca)
+
+# Aportaciones de variables a PC1
+fviz_contrib (res.pca, choice = "var", axes = 1)
+
+# Aportaciones de variables a PC2
+fviz_contrib (res.pca, choice = "var", axes = 2)
+
+# Aportaciones de variables a PC10
+fviz_contrib (res.pca, choice = "var", axes = 3)
+
+# Controlar los colores variables utilizando sus aportaciones al eje principal.
+fviz_pca_var (res.pca, col.var = "contrib",
+gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
+                  repel = TRUE # Evita la superposición de texto
+                  ) + theme_minimal () + ggtitle ("Variables - PCA")
+```
+
+
+## Mostrar los Clusters##
+
+```{r}
+p1 <- fviz_cluster(km.out, data = alumnos.training, frame.type = "convex") + theme_minimal () + ggtitle ("k = 3")
+#plot_grid(p1)
 ```
 
 

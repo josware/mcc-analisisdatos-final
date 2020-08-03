@@ -1,0 +1,78 @@
+---
+title: "Proyecto Final - Red neuronal"
+author: "Anna Casillas"
+date: "Agosto 2,2020"
+output: rmarkdown::github_document
+---
+
+# Red Neuronal #
+
+Equipo:
+
+* Anna Karen Casillas
+* Josue Emmnanuel Gomez
+* Luis Francisco Gonzalez
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,fig.path = "figure/imgs/README_figs/README-")
+```
+
+## Variables y Dependencias Iniciales
+
+Aqui se especifican las variables generales necesarias para todo el proyecto
+
+```{r}
+#Modificar variable para especificar directorio del Proyecto Final
+user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
+
+local.path <- paste(user.path ,"/data",sep = "")
+local.path.imgs <- paste(user.path ,"/imgs",sep = "")
+```
+Aqui se especifican todas las dependencias que se utilizaran en el proyecto
+
+```{r}
+#Dependencies
+#install.packages("png")
+library(png)
+library(corrplot)
+source("http://www.sthda.com/upload/rquery_cormat.r")
+col<- colorRampPalette(c("blue", "white", "red"))(20)
+#install.packages("factoextra")
+#install.packages("FactoMineR")
+library(FactoMineR)
+library(factoextra)
+#install.packages('neuralnet')
+library(neuralnet)
+```
+
+Cargamos los datos
+
+```{r}
+setwd(local.path)
+load("alumnos.training.R")
+#alumnos.training
+head(alumnos.training,3)
+load("alumnos.test.R")
+#alumnos.test
+head(alumnos.test,3)
+```
+ 
+## Formula 1 ##
+ 
+```{r}
+
+```
+
+## Neural Net ##
+
+```{r}
+
+```
+
+## Testing ##
+
+```{r}
+
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
