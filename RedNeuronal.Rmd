@@ -55,23 +55,55 @@ load("alumnos.test.R")
 #alumnos.test
 head(alumnos.test,3)
 ```
+
+
+```{r}
+str(alumnos.training)
+```
+ 
+ 
  
 ## Formula 1 ##
  
 ```{r}
-
+formula1 <- beca ~ .
 ```
 
 ## Neural Net ##
 
 ```{r}
-
+set.seed(1234)
+neural.net.1 <- neuralnet(formula = formula1, 
+                          data  = alumnos.training,
+                          hidden = c(15,10,5), #numero de capas iniciales, medias y finales 
+                          threshold = 0.005, #el threshold del perceptron para arrojar una salida iniciamos con 0.01
+                          stepmax = 1e+07, #la cantidad de veces q lo queremos correr
+                          lifesign = "full") # para ver q hace R
 ```
+
+```{r}
+class(neural.net.1)
+plot(neural.net.1)
+```
+
 
 ## Testing ##
 
-```{r}
+probando con alumnos.test
 
+```{r}
+nn.result <- compute(neural.net.1, alumnos.test)
+attributes(nn.result)
+nn.result$net.result
+```
+
+Comparar
+```{r}
+compare.output <-  cbind(alumnos.test$beca, alumnos.training$beca,nn.result$net.result)
+colnames(compare.output) <- c("entrada","valor.correcto","prediccion")
+compare.output
+compare.output$error <- compare.output$valor.correcto - compare.output$prediccion
+compare.output
 ```
 
 
