@@ -23,7 +23,7 @@ Aqui se especifican las variables generales necesarias para todo el proyecto
 
 ```{r}
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
+user.path <- "/Users/luisfgo/Documents/MCC/1V Analitica de Datos/ProyectoFinal/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")
@@ -193,11 +193,6 @@ summary(asistencias.totales.df)
 #asistencias.totales.df
 head(asistencias.totales.df,3)
 ```
-
-```{r}
-
-```
-
 
 ### Resultados Examenes ###
 
@@ -593,9 +588,9 @@ datos.integrados.df <- cbind.data.frame(perfil.alumnos,
                               promedio.trabajos.df,
                               promedio.examenes.df,
                               promedio.pagos.df,
-                              promedio.uso.biblio.df,
+                              #promedio.uso.biblio.df,
                               uso.biblioteca.df,
-                              promedio.uso.plataforma.df,
+                              #promedio.uso.plataforma.df,
                               uso.plataforma.df,
                               apartado.libros.df,
                               cambio.carrera.df)

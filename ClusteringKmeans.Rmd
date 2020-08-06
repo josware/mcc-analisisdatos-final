@@ -23,7 +23,7 @@ Aqui se especifican las variables generales necesarias para todo el proyecto
 
 ```{r}
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
+user.path <- "/Users/luisfgo/Documents/MCC/1V Analitica de Datos/ProyectoFinal/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")
@@ -33,6 +33,9 @@ Aqui se especifican todas las dependencias que se utilizaran en el proyecto
 ```{r}
 #Dependencies
 #install.packages("png")
+#install.packages("corrplot")
+#install.packages("cowplot")
+library("cowplot")
 library(png)
 library(corrplot)
 source("http://www.sthda.com/upload/rquery_cormat.r")
@@ -41,6 +44,10 @@ col<- colorRampPalette(c("blue", "white", "red"))(20)
 #install.packages("FactoMineR")
 library(FactoMineR)
 library(factoextra)
+library(ggplot2)
+```
+```{r}
+install.packages("pca")
 ```
 
 Cargamos los datos integrados
@@ -48,7 +55,7 @@ Cargamos los datos integrados
 ```{r}
 setwd(local.path)
 load("datos.integrados.R")
-#datos.integrados.df
+#str(datos.integrados.df)
 head(datos.integrados.df,3)
 ```
 
@@ -58,22 +65,36 @@ Separamos 100 alumnos que no entraran en Kmeans.
 
 ```{r}
 set.seed(1234)
-
-alumnos.gen <- sample(x=c(0,1),size=nrow(datos.integrados.df), replace=TRUE,prob = c(0.9,0.1))
+str(datos.integrados.df)
+alumnos.gen <- sample(x=c(0,1),size=nrow(datos.integrados.df), replace=TRUE,prob = c(0.92,0.079))
 
 #alumnos.gen
 head(alumnos.gen,5)
 
-alumnos.nuevos <- datos.integrados.df[alumnos.gen==1,]
+#90%
 alumnos.actuales <- datos.integrados.df[alumnos.gen==0,]
+nrow(alumnos.actuales)
+#10%
+alumnos.nuevos <- datos.integrados.df[alumnos.gen==1,]
+nrow(alumnos.nuevos)
 setwd(local.path)
 save(alumnos.nuevos, file="alumnos.nuevos.R")
 save(alumnos.actuales, file="alumnos.actuales.R")
 
 #alumnos.nuevos
 head(alumnos.nuevos,5)
-#alumnos.actuales
+#Muestra de 5 alumnos.actuales
 head(alumnos.actuales,5)
+```
+```{r}
+setwd(local.path)
+alumnos.nuevos$genero <- as.numeric(alumnos.nuevos$genero)
+alumnos.nuevos$edad.ingreso <- as.numeric(alumnos.nuevos$edad.ingreso)
+alumnos.nuevos$evalucion.socioeconomica <- as.numeric(alumnos.nuevos$evalucion.socioeconomica)
+alumnos.nuevos$beca <- as.numeric(alumnos.nuevos$beca)
+alumnos.nuevos$cambio.carrera <- as.numeric(alumnos.nuevos$cambio.carrera)
+str(alumnos.nuevos)
+save(alumnos.nuevos, file="alumnos.nuevos.R")
 ```
 
 ```{r}
@@ -84,43 +105,6 @@ summary(alumnos.nuevos)
 summary(alumnos.actuales)
 ```
 
-Separamos 70-30 training set.
-
-```{r}
-set.seed(1234)
-
-alumnos.sep <- sample(x=c(0,1),size=nrow(alumnos.actuales),replace=TRUE,prob = c(0.7,0.3))
-#alumnos.sep
-head(alumnos.sep,3)
-
-alumnos.training <- alumnos.actuales[alumnos.sep==0,]
-alumnos.test <- alumnos.actuales[alumnos.sep==1,]
-setwd(local.path)
-save(alumnos.training, file="alumnos.training.R")
-save(alumnos.test, file="alumnos.test.R")
-
-str(alumnos.training)
-summary(alumnos.training)
-```
-
-```{r}
-alumnos.training$genero <- as.numeric(alumnos.training$genero)
-alumnos.training$edad.ingreso <- as.numeric(alumnos.training$edad.ingreso)
-alumnos.training$evalucion.socioeconomica <- as.numeric(alumnos.training$evalucion.socioeconomica)
-alumnos.training$beca <- as.numeric(alumnos.training$beca)
-alumnos.training$cambio.carrera <- as.numeric(alumnos.training$cambio.carrera)
-str(alumnos.training)
-```
-
-```{r}
-alumnos.test$genero <- as.numeric(alumnos.test$genero)
-alumnos.test$edad.ingreso <- as.numeric(alumnos.test$edad.ingreso)
-alumnos.test$evalucion.socioeconomica <- as.numeric(alumnos.test$evalucion.socioeconomica)
-alumnos.test$beca <- as.numeric(alumnos.test$beca)
-alumnos.test$cambio.carrera <- as.numeric(alumnos.test$cambio.carrera)
-str(alumnos.test)
-```
-
 ```{r}
 alumnos.actuales$genero <- as.numeric(alumnos.actuales$genero)
 alumnos.actuales$edad.ingreso <- as.numeric(alumnos.actuales$edad.ingreso)
@@ -128,25 +112,22 @@ alumnos.actuales$evalucion.socioeconomica <- as.numeric(alumnos.actuales$evaluci
 alumnos.actuales$beca <- as.numeric(alumnos.actuales$beca)
 alumnos.actuales$cambio.carrera <- as.numeric(alumnos.actuales$cambio.carrera)
 str(alumnos.actuales)
-setwd(local.path)
-save(alumnos.training, file="alumnos.training.R")
-save(alumnos.test, file="alumnos.test.R")
-save(alumnos.test, file="alumnos.actuales.R")
 ```
+
 
 ## Analisis de Correlacion ##
 
 ```{r}
 jpeg('imgs/correlacion-alumnos-ad.jpg', width=1920, height=1080)
-rquery.cormat(alumnos.training, type="full", col=col)
+rquery.cormat(alumnos.actuales, type="full", col=col)
 dev.off()
-cormat<-rquery.cormat(alumnos.training, type="full", col=col)
+cormat<-rquery.cormat(alumnos.actuales, type="full", col=col)
 ```
 
 correlacion con pearson
 
 ```{r}
-cor.matrix <- cor(alumnos.training, method = "pearson", use = "complete.obs")
+cor.matrix <- cor(alumnos.actuales, method = "pearson", use = "complete.obs")
 corrplot(cor.matrix)
 ```
 
@@ -161,7 +142,7 @@ wss.alumnos <-vector()
 wss.alumnos
 centroides.alumnos <- 25
 for ( i in 1:centroides.alumnos ) 
-  wss.alumnos[i] <- kmeans(alumnos.training,centers = i,nstart=20)$tot.withinss
+  wss.alumnos[i] <- kmeans(alumnos.actuales,centers = i,nstart=20)$tot.withinss
 
 #plot
 plot(1:centroides.alumnos  , wss.alumnos , type="b", xlab = "Number of Clusters", ylab = "Within groups sum of squares")
@@ -182,7 +163,7 @@ wss.alumnos <-vector()
 wss.alumnos
 centroides.alumnos <- 10
 for ( i in 1:centroides.alumnos ) 
-  wss.alumnos[i] <- kmeans(alumnos.training,centers = i,nstart=20)$tot.withinss
+  wss.alumnos[i] <- kmeans(alumnos.actuales,centers = i,nstart=20)$tot.withinss
 
 #plot
 plot(1:centroides.alumnos  , wss.alumnos , type="b", xlab = "Number of Clusters", ylab = "Within groups sum of squares")
@@ -204,7 +185,7 @@ rasterImage(img.codo.sel.alumnos,0,0,1,1)
 # Set seed
 set.seed(12345)
 # Create the k-means model: km.out
-km.out <- kmeans(alumnos.training, centers = 3, nstart = 20)
+km.out <- kmeans(alumnos.actuales, centers = 3, nstart = 20)
 
 # Inspect the result
 summary(km.out)
@@ -227,11 +208,25 @@ km.out$cluster
 km.out
 ```
 
+```{r}
+km.out$cluster
+```
+
+Agregar Columna para identificar Grupo en Riesgo
+*Grupo De Riesgo Seleccionado 3*
+```{r}
+desercion <- vector(mode="numeric", length = nrow(alumnos.actuales))
+alumnos.actuales <- cbind(alumnos.actuales, desercion)
+alumnos.actuales[km.out$cluster==3,]$desercion <- 1
+
+str(alumnos.actuales)
+alumnos.actuales
+```
 
 ## PCA ##
 ```{r}
-res.pca <- PCA(alumnos.training, graph = FALSE)
-fviz_screeplot (res.pca, addlabels = TRUE, ylim = c (0, 50))
+res.pca <- PCA(alumnos.actuales, graph = FALSE)
+fviz_screeplot(res.pca, addlabels = TRUE, ylim = c (0, 50))
 ```
 
 ```{r}
@@ -258,9 +253,49 @@ gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
 ## Mostrar los Clusters##
 
 ```{r}
-p1 <- fviz_cluster(km.out, data = alumnos.training, frame.type = "convex") + theme_minimal () + ggtitle ("k = 3")
-#plot_grid(p1)
+p1 <- fviz_cluster(km.out, data = alumnos.actuales, ellipse.type = "convex") + theme_minimal () + ggtitle ("k = 3")
+plot_grid(p1)
+```
+## Separar datos para Red Neuronal
+```{r}
+set.seed(1234)
+
+alumnos.sep <- sample(x=c(0,1),size=nrow(alumnos.actuales),replace=TRUE,prob = c(0.78,0.21))
+#alumnos.sep
+head(alumnos.sep,3)
+
+alumnos.training <- alumnos.actuales[alumnos.sep==0,]
+alumnos.test <- alumnos.actuales[alumnos.sep==1,]
 ```
 
+```{r}
+str(alumnos.training)
+str(alumnos.test)
+```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Guardar datos 
+```{r}
+alumnos.training$genero <- as.numeric(alumnos.training$genero)
+alumnos.training$edad.ingreso <- as.numeric(alumnos.training$edad.ingreso)
+alumnos.training$evalucion.socioeconomica <- as.numeric(alumnos.training$evalucion.socioeconomica)
+alumnos.training$beca <- as.numeric(alumnos.training$beca)
+alumnos.training$cambio.carrera <- as.numeric(alumnos.training$cambio.carrera)
+str(alumnos.training)
+```
+
+```{r}
+alumnos.test$genero <- as.numeric(alumnos.test$genero)
+alumnos.test$edad.ingreso <- as.numeric(alumnos.test$edad.ingreso)
+alumnos.test$evalucion.socioeconomica <- as.numeric(alumnos.test$evalucion.socioeconomica)
+alumnos.test$beca <- as.numeric(alumnos.test$beca)
+alumnos.test$cambio.carrera <- as.numeric(alumnos.test$cambio.carrera)
+str(alumnos.test)
+```
+
+```{r}
+setwd(local.path)
+save(alumnos.training, file="alumnos.training.R")
+save(alumnos.test, file="alumnos.test.R")
+```
+
+Note: that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
