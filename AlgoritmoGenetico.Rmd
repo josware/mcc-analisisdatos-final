@@ -1,6 +1,6 @@
 ---
 title: "Proyecto Final - Algoritmo Genetico"
-author: "Anna Casillas"
+author: "Casillas, A., González, L., Gómez, J."
 date: "Agosto 3,2020"
 output: rmarkdown::github_document
 ---
@@ -23,7 +23,7 @@ Aqui se especifican las variables generales necesarias para todo el proyecto
 
 ```{r}
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
+user.path <- "/Users/jos/Downloads/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")
@@ -41,13 +41,251 @@ col<- colorRampPalette(c("blue", "white", "red"))(20)
 #install.packages("FactoMineR")
 library(FactoMineR)
 library(factoextra)
+#install.packages("genalg")
+library("genalg")
 ```
 
 Cargamos los datos
 
 ```{r}
 setwd(local.path)
-load("alumnos.training.R")
+load("alumnos.desertores.df.R")
+
 ```
+
+```{r}
+alumnos.desertores.df
+```
+
+##Funciones de soporte
+```{r}
+getBest <- function(inTree) {
+  outBest <- inTree$population[inTree$evaluations == min(inTree$best),][1,]
+  
+  return (outBest)
+}  
+
+printStats <- function(inBest) {
+  out.sep <- "--------------------------------------------------------------------------------"
+  out.items.weight <- inBest %*% items$weight
+  out.survival.points <- inBest %*% items$survivalpoints
+  print(out.sep)
+  print("Vector: ")
+  print(inBest)
+  print(paste("Items weight: ", out.items.weight))
+  print(paste("Survival points of this vector: ", out.survival.points))
+  print(out.sep)
+  } 
+```
+
+
+## Función optimizada
+
+```{r}
+budget.limit.10k <- 10000
+
+
+items <- data.frame(
+  item=c("beca","bienevales","mentoria","psicologo","evento",
+         "asesor","remediales", "visita.empresa","extratemporaneo", "cheertalk", 
+         "viaje"),
+  stayingpoints = c(90,95,85,70,50,
+                     60,80,100,80,85,
+                     70),
+  usd.ammount = c(500, 100, 200, 400, 50,
+             250, 2500, 50, 100, 50,
+             10)
+)
+
+fitness.presupuesto.desercion <- function(x) {
+  items.usd.ammount <- x %*% items$usd.ammount
+  items.s.p <- x %*% items$stayingpoints
+  if (items.usd.ammount > budget.limit.10k ) 
+  {
+    return(0)
+  }
+  else
+  {
+    partial.result <- items.s.p
+    # #Reglas: 
+    # ##J05
+    # ##Encendedor  x[1] == 1 , Cerillos x[11] == 1 & Pedernal x[13] == 1
+    # ###Solo se vale llevar uno para hacer fuego, si no penalización
+    # if((x[1] + x[11] + x[13]) > 1){
+    #   partial.result <- items.s.p - (items$survivalpoints[1] + items$survivalpoints[11] + items$survivalpoints[13])
+    # }
+    # ##Navaja  x[3] == 1 & Cuchillo x[10] == 1 
+    # ###Solo se vale llevar un elemento punzo cortante, si no penalización
+    # if((x[3] + x[10] > 1)){
+    #   partial.result <- items.s.p - (items$survivalpoints[3] + items$survivalpoints[10])
+    # }
+    # ##Linterna x[4] == 1 & Bat.extra x[12] == 1 
+    # ###Deben ir ambas, si no penalización
+    # if((x[4] + x[12] > 0) && (x[4] + x[12] < 2)){
+    #   partial.result <- items.s.p - (items$survivalpoints[4] + items$survivalpoints[12])
+    # }
+    # ##Cerveza x[22] == 1 , Hielos  x[24] == 1 , Leche x[37] == 1 & Hielera x[39] == 1
+    # ###Si llevas hielo y/o hielera, pero no los dos penalización
+    # if(((x[24] + x[39] > 0) && (x[24] + x[39] < 2))){
+    #   partial.result <- items.s.p - (items$survivalpoints[24] + items$survivalpoints[39])
+    #   ####Si aparte osaste llevar perecederos (cerveza y/o leche), penalización
+    #   if(x[22] == 1){items.s.p - items$survivalpoints[22]}
+    #   if(x[37] == 1){items.s.p - items$survivalpoints[37]}
+    # }
+    # ###Si llevas cerveza o leche y no llevas hielo y hielera penalización
+    # if(((x[22] + x[37] > 0) && (x[24] + x[39] < 2))){
+    #   partial.result <- items.s.p - (items$survivalpoints[22] + items$survivalpoints[37])
+    # }
+    # ##Anna
+    # #Lampara y no Baterias
+    # if((x[4] == 1) && (x[12] == 0)){ #Como la lampara se queda sin uso
+    #   partial.result <- partial.result - items$survivalpoints[4] # quitamos su peso por completo
+    # }
+    # #Bateria y no Lampara
+    # if((x[12] == 0) && (x[4] == 1)){ # La bateria se puede usar para otra cosas
+    #   partial.result <- partial.result - (items$survivalpoints[12]/2)# castigamos con quitando la mitad de puntos
+    # }
+    # #Arco y no flechas
+    # if((x[31] == 1) && (x[40] == 0)){ # como arco queda sin uso
+    #   partial.result <- partial.result - items$survivalpoints[31] # quitamos su peso por completo
+    # }
+    #  #Flechas y no Arco
+    # if((x[31] == 0) && (x[40] == 1)){ # las flechas aun pueden ser utiles para cortar cosas
+    #   partial.result <- partial.result - (items$survivalpoints[40]/2) # castigamos con quitando la mitad de puntos
+    # }
+    # #Pistola y no balas
+    # if((x[32] == 1) && (x[33] == 0)){ # como pistola queda sin uso
+    #   partial.result <- partial.result - (items$survivalpoints[33] + items$survivalpoints[32] * 3) # quitamos su peso por completo
+    # }
+    # #Balas y no Pistola
+    # if((x[33] == 1) && (x[32] == 0)){ # las balas aun pueden ser utiles para cortar cosas
+    #   partial.result <- partial.result - (items$survivalpoints[33] + items$survivalpoints[32] ) # castigamos con el total de puntos
+    # }
+    # #Leche y no Hielos/Hielera
+    # #if((x[37] == 1) && (x[24] == 0) && (x[39 ] == 0)){ 
+    # #  partial.result <- partial.result - items$survivalpoints[37] # castigamos con el total de puntos
+    # #}
+    # #Hielos/Hielera y no leche
+    # #if((x[37] == 10) && (x[24] == 1) && (x[39 ] == 1)){  # hielos y hielera se excluyen no tiene caso que esten 
+    # # partial.result <- partial.result - (items$survivalpoints[24]+items$survivalpoints[39]) # castigamos con  el total de puntos, hielos  + hilera pts 
+    # #}
+    # #excluir arco y pistola cuando estan ambos
+    # if((x[31] == 1) && (x[32] == 1)){
+    #   partial.result <- partial.result - (items$survivalpoints[31]+items$survivalpoints[32]+items$survivalpoints[33]+items$survivalpoints[40]) # castigamos con  el total de puntos de pistola + arco
+    # }
+    # 
+    # ##Luis
+    #     #=============
+    # #Realcion 6 (Brujula 7, mapa 30, gps 28)
+    # #=============
+    # #Brujula y GPS
+    # if((x[7]==1)&&(x[28]==1)){
+    #   partial.result <- partial.result - (items$survivalpoints[7] + items$survivalpoints[28]) #(80+90)
+    # }
+    # #Mapa y no Brujula/GPS
+    # if((x[30]==1) && (x[7]==0) && (x[29])==0 ){
+    #   partial.result <- partial.result - (items$survivalpoints[30] / 2) #(El mapa sirve sin la brújula ero más ineficiente)
+    # }
+    # #=============
+    # #Relaciones 8 (Cazuela 18, atun.kilo 9, pedernal 13, cerillos 11)
+    # #=============
+    # #Cerillos y Pedernal
+    # if((x[11]==1)&&(x[13]==1)){
+    #   partial.result <- partial.result - (items$survivalpoints[11] + items$survivalpoints[13])  #(70+80)
+    # }
+    # # Cazuela y Atun pero no Pedernal no Cerillos
+    # if((x[18]==1)&&(x[9]==1)&&(x[13]==0)&&(x[11]==0)){
+    #   partial.result <- partial.result - (items$survivalpoints[18] / 2) #(Cazuela pierde 50% utilidad)
+    # }
+    # # Atun y no Cazauela y no Pedernal no Cerillos
+    # if((x[9]==1)&&(x[18]==0)&&(x[13]==0)&&(x[11]==0)){
+    #   partial.result <- partial.result- (items$survivalpoints[9] / 2) #(Atún pierde 50% duncionalidad)
+    # }
+    # #=============
+    # #Relaciones 12 (Pedernal 13, Cuchillo 10, navaja 3)
+    # #==============
+    # #Pedernal y no cuchillo o no navaja
+    # if((x[13]==1)&&(x[10]==0)&&(x[3]==0)){
+    #   partial.result <- partial.result - (items$survivalpoints[13] / 2) #(Pedernal pierde 50% funcionalidad)
+    # }
+    # 
+    # #=============
+    # #Relaciones 9 (bat.extra 12, panales solares 29, celular.satelital 35, tablet 36.)
+    # #==============
+    # #Celular y no bateria, no panel solar
+    # if((x[35]==1)&&(x[12]==0)&&(x[29]==0)){
+    #   partial.result <- partial.result - (items$survivalpoints[35]/2) #(Celular pierde 50% funcionalidad)
+    # }
+    # #Tablet  y no bateria, no panel solar
+    # if((x[36]==1)&&(x[13]==0)&&(x[29]==0)){
+    #   partial.result <- partial.result - (items$survivalpoints[36]/2) #(Celular pierde 50% funcionalidad)
+    # }
+    # 
+    return (-items.s.p)
+  }
+}
+```
+
+
+```{r}
+
+set.seed(2020)
+ga.tree <- rbga.bin(size = 11, popSize = 5,
+                    mutationChance = .01,
+                    elitism = 1, iters = 2,
+                    evalFunc = fitness.presupuesto.desercion,
+                    verbose = T
+                    )
+
+#inTree$population[inTree$evaluations == min(inTree$best),][1,]
+ga.tree$population[ga.tree$evaluations == min(ga.tree$best),]
+# 
+# ga.tree$population
+
+
+# best.5 <- getBest(ga.tree)
+# best.5
+```
+
+```{r}
+ga.tree$evaluations
+```
+
+```{r}
+min(ga.tree$best)
+```
+```{r}
+best.i <- ga.tree$evaluations == min(ga.tree$best)
+```
+
+
+```{r}
+ga.tree$population[best.i,]
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

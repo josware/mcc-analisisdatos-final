@@ -1,6 +1,6 @@
 ---
 title: "Proyecto Final - Clustering Kmeans"
-author: "Anna Casillas"
+author: "Casillas, A., González, L., Gómez, J."
 date: "Agosto 1,2020"
 output: rmarkdown::github_document
 ---
@@ -23,7 +23,7 @@ Aqui se especifican las variables generales necesarias para todo el proyecto
 
 ```{r}
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/luisfgo/Documents/MCC/1V Analitica de Datos/ProyectoFinal/mcc-analisisdatos-final"
+user.path <- "/Users/jos/Downloads/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")

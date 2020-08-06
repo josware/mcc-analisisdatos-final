@@ -1,6 +1,6 @@
 ---
 title: "Proyecto Final - Red neuronal"
-author: "Anna Casillas"
+author: "Casillas, A., González, L., Gómez, J."
 date: "Agosto 2,2020"
 output: rmarkdown::github_document
 ---
@@ -177,6 +177,16 @@ alumnos.desertores.df <- cbind(alumnos.nuevos, desercion)
 alumnos.desertores.df
 
 ```
+ 
+```{r}
+a<- alumnos.desertores.df[alumnos.desertores.df$desercion == 1,]
+print("Rows and columns")
+print(dim(a))
+```
+```{r}
+alumnos.desertores.df <- a
+```
+ 
  
 ## Seleccionar alumnos que se predicen van a reprobar 
 ```{r}
