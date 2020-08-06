@@ -1,0 +1,619 @@
+---
+title: "Proyecto Final - Analisis de Datos"
+author: "Anna Casillas"
+date: "July 31,2020"
+output: rmarkdown::github_document
+---
+
+# Integracion de datos #
+
+Equipo:
+
+* Anna Karen Casillas
+* Josue Emmnanuel Gomez
+* Luis Francisco Gonzalez
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,fig.path = "figure/imgs/README_figs/README-")
+```
+
+## Variables y Dependencias Iniciales
+
+Aqui se especifican las variables generales necesarias para todo el proyecto
+
+```{r}
+#Modificar variable para especificar directorio del Proyecto Final
+user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
+
+local.path <- paste(user.path ,"/data",sep = "")
+local.path.imgs <- paste(user.path ,"/imgs",sep = "")
+```
+Aqui se especifican todas las dependencias que se utilizaran en el proyecto
+
+```{r}
+#Dependencies
+#install.packages("png")
+library(png)
+library(corrplot)
+source("http://www.sthda.com/upload/rquery_cormat.r")
+col<- colorRampPalette(c("blue", "white", "red"))(20)
+```
+
+## Datos - Proyecto Integrador
+
+En General toda la informacion importada es sobre los 9 semestres de una carrera promedio con 6 materias cada uno.
+
+### Perfil Alumnos ###
+
+Definición Valores
+
+* Genero: 2 Hombre, 1 Mujer.
+* admision.letras: Calificación Examen Admisión Español
+* admision.numeros: Calificación Examen Admisión Matemáticas
+* promedio.preparatoria: Calificación Promedio Preparatoria   
+* edad.ingreso: Edad, variable numérica             
+* evalucion.socioeconomica: 1 más privilegiado, 4 menos privilagiado
+* nota.conducta: Calificación subjetiva. 20 es el maximo de mejor conduta
+
+```{r}
+setwd(local.path)
+load("perfilAlumnos.R")
+class(perfil.alumnos)
+str(perfil.alumnos)
+summary(perfil.alumnos)
+head(perfil.alumnos,1)
+```
+
+```{r}
+perfil.alumnos$genero <- factor(perfil.alumnos$genero)
+perfil.alumnos$evalucion.socioeconomica <- factor(perfil.alumnos$evalucion.socioeconomica)
+perfil.alumnos$edad.ingreso <- factor(perfil.alumnos$edad.ingreso)
+str(perfil.alumnos)
+summary(perfil.alumnos)
+```
+
+
+### Asistencias Totales ###
+
+Definicion de Valores
+
+* 2 -> Asistencia
+* 1 -> retardo
+* 0 -> falta
+
+```{r asistencias.totales}
+setwd(local.path)
+load("AsistenciasTotales.R") #cargamos los datos de asistencias totales
+class(asistencias.totales) # para saber de que tipo es, en este caso es una lista
+length(asistencias.totales) # tamano del objecto, en este caso son 1000 Alumnos
+class(asistencias.totales[[1]]) # para obtener que tipo es el objecto dentro de la lista, es matriz, por lo tanto tenemos una lista de matrices
+dim(asistencias.totales[[1]]) # el tamano de cada matriz 32 x 54
+```
+
+Asistencias del alumnos 1 en los primeros 2 semestres (1 año - 12 materias)
+
+```{r}
+asistencias.totales[[1]][1:32,1:12]
+```
+
+Obtenemos las asistencias por semestre:
+
+```{r}
+asistencias.totales.semestre1 <- list()
+asistencias.totales.semestre2 <- list()
+for(i in 1:length(asistencias.totales)){
+  asistencias.totales.semestre1[[i]] <- asistencias.totales[[i]][,1:6]
+  asistencias.totales.semestre2[[i]] <- asistencias.totales[[i]][,7:12]
+}
+
+```
+Ejemplo de la asistencia del alumno 1 en el semestre 1
+
+```{r}
+asistencias.totales.semestre1[[1]]
+```
+Ejemplo de la asistencia del alumno 1 en el semestre 2
+```{r}
+asistencias.totales.semestre2[[1]]
+```
+
+Obtenemos promedio de Asistencia por materia
+
+Aqui es visible que el alumno uno en la materia1 asistio un 93.75% 
+
+```{r}
+asistencias.alumnos.semestre1 <- matrix(1:6000, nrow=1000, ncol=6)
+asistencias.alumnos.semestre2 <- matrix(1:6000, nrow=1000, ncol=6)
+for(i in 1:length(asistencias.totales)){
+  for(j in 1:6){
+     asistencias.alumnos.semestre1[i,j] <- (sum(asistencias.totales.semestre1[[i]][,j])/32)/2
+     asistencias.alumnos.semestre2[i,j] <- (sum(asistencias.totales.semestre2[[i]][,j])/32)/2
+  }
+}
+
+#Muestra de los primeros  6 alumnos
+asistencias.alumnos.semestre1[1:6,1:6]
+asistencias.alumnos.semestre2[1:6,1:6]
+```
+
+Obtenemos los data frames para cada semestre de asistencia
+
+Ejemplo de Etiquetado: AM1 = Asistencia Materia 1
+
+```{r}
+#Semestre 1
+rownames(asistencias.alumnos.semestre1) <- 1:1000
+asistencias.semestre1.df <- as.data.frame(asistencias.alumnos.semestre1)
+colnames(asistencias.semestre1.df) <- c('AM1','AM2','AM3','AM4','AM5','AM6') # Ejemplo: AM1 = Asistencia Materia 1
+str(asistencias.semestre1.df)
+summary(asistencias.semestre1.df)
+#asistencias.semestre1.df
+head(asistencias.semestre1.df,3)
+#Semestre 2
+rownames(asistencias.alumnos.semestre2) <- 1:1000
+asistencias.semestre2.df <- as.data.frame(asistencias.alumnos.semestre2)
+colnames(asistencias.semestre2.df) <- c('AM7','AM8','AM9','AM10','AM11','AM12') # Ejemplo: AM1 = Asistencia Materia 1
+str(asistencias.semestre2.df)
+summary(asistencias.semestre2.df)
+#asistencias.semestre2.df
+head(asistencias.semestre2.df,3)
+```
+
+Dataframe para el promedio de asistencias totales por semestre y en el año del alumno
+
+```{r}
+asistencias.alumnos.semestres <- matrix(1:2000, nrow=1000, ncol=2)
+asistencias.totales.df <-  matrix(1:1000, nrow=1000, ncol=1) #para las totales Anual
+for(i in 1:length(asistencias.totales)){
+   asistencias.alumnos.semestres[i,1] <- sum(asistencias.alumnos.semestre1[i,1:6])/6
+   asistencias.alumnos.semestres[i,2] <- sum(asistencias.alumnos.semestre2[i,1:6])/6
+   asistencias.totales.df[i] <- sum(asistencias.alumnos.semestres[i,1:2])/2
+}
+
+#Muestra del promedio de asistencia de los dos semestres de los primeros dos alumnos
+asistencias.alumnos.semestres[1:2,1:2]
+```
+
+Si tomamos el alumno 1 vemos que en promedio en el primer semestre el alumnos asistio 87.5 % a clases.
+
+```{r}
+rownames(asistencias.alumnos.semestres) <- 1:1000
+asistencias.semestres.df <- as.data.frame(asistencias.alumnos.semestres)
+colnames(asistencias.semestres.df) <- c("Asist.Sem1","Asist.Sem2")
+str(asistencias.semestres.df)
+summary(asistencias.semestres.df)
+#asistencias.semestres.df
+head(asistencias.semestres.df,3)
+#Para el Total
+rownames(asistencias.totales.df) <- 1:1000
+asistencias.totales.df <- as.data.frame(asistencias.totales.df)
+colnames(asistencias.totales.df) <- c("Asist.Total")
+str(asistencias.totales.df)
+summary(asistencias.totales.df)
+#asistencias.totales.df
+head(asistencias.totales.df,3)
+```
+
+```{r}
+
+```
+
+
+### Resultados Examenes ###
+
+Definicion de los Valores:
+
+* Mejor Calificacion 20
+* Menos Calificacion 1
+
+```{r}
+setwd(local.path)
+load("ResultadosExamenes.R") # cargamos resultados totales de los Examenes
+class(resultados.examenes.totales) # para saber de que tipo es, en este caso es una lista
+length(resultados.examenes.totales) # tamano del objecto, en este caso son 1000 Alumnos
+class(resultados.examenes.totales[[1]]) # para obtener que tipo es el objecto dentro de la lista, es matriz, por lo tanto tenemos una lista de matrices
+dim(resultados.examenes.totales[[1]]) # el tamano de cada matriz 2 x 54
+```
+
+Ejemplo del alumno 1000:
+se tuvieron 2 examenes por materia.
+
+```{r}
+resultados.examenes.totales[[1000]]
+```
+
+Obtendremos el dataframe para el promedio de los examenes
+```{r}
+promedio.examenes.mtx <- matrix(1:1000,nrow=1000,ncol=1)
+for (i in 1:1000) {
+  promedio.examenes.mtx[i] <- mean(resultados.examenes.totales[[i]][,1:12]) 
+}
+rownames(promedio.examenes.mtx) <- 1:1000
+promedio.examenes.df <- as.data.frame(promedio.examenes.mtx)
+colnames(promedio.examenes.df) <- c("prom.exam")
+str(promedio.examenes.df)
+summary(promedio.examenes.df)
+#promedio.examenes.df
+head(promedio.examenes.df,3)
+```
+
+### Resultado de Trabajos ###
+
+Definicion de los Valores:
+
+* Mejor Calificacion 20
+* Menos Calificacion 1
+
+```{r}
+setwd(local.path)
+load("ResultadoTrabajos.R")# cargamos resultados totales de los Trabajos
+class(resultados.trabajos.totales) # para saber de que tipo es, en este caso es una lista
+length(resultados.trabajos.totales) # tamano del objecto, en este caso son 1000 Alumnos
+class(resultados.trabajos.totales[[1]]) # para obtener que tipo es el objecto dentro de la lista, es matriz, por lo tanto tenemos una lista de matrices
+dim(resultados.trabajos.totales[[1]]) # el tamano de cada matriz 4 x 54
+```
+
+si tomamos el primer alumno podemos ver que fueron evaluados 4 trabajos por materia.
+
+```{r}
+resultados.trabajos.totales[[1]]
+```
+
+ahora obtendremos el dataframe para el promedio de los trabajos
+
+```{r}
+promedio.trabajos.mtx <- matrix(1:1000,nrow=1000,ncol=1)
+for (i in 1:1000) {
+  promedio.trabajos.mtx[i] <- mean(resultados.trabajos.totales[[i]][,1:12]) 
+}
+rownames(promedio.trabajos.mtx) <- 1:1000
+promedio.trabajos.df <- as.data.frame(promedio.trabajos.mtx)
+colnames(promedio.trabajos.df) <- c("prom.trab")
+str(promedio.trabajos.df)
+summary(promedio.trabajos.df)
+#promedio.trabajos.df
+head(promedio.trabajos.df,3)
+```
+
+### Uso de Biblioteca ###
+
+Uso físico y virtual. vector. 1000 Matrices, número de veces que asistio a la biblioteca por materia.
+
+```{r}
+setwd(local.path)
+load("UsoBiblioteca.R")# cargamos usos de biblioteca
+class(uso.biblioteca.totales) # para saber de que tipo es, en este caso es una lista
+length(uso.biblioteca.totales) # tamano del objecto, en este caso son 1000 Alumnos
+class(uso.biblioteca.totales[[1]]) # para obtener que tipo es el objecto dentro de la lista, es matriz, por lo tanto tenemos una lista de matrices
+dim(uso.biblioteca.totales[[1]]) # el tamano de cada matriz 1 x 54
+```
+
+Seleccionamos los datos del primer alumnos, podemos ver que es la frecuencia de visitas, por lo que tendremos que redondear.
+
+```{r}
+uso.biblioteca.totales[[1]]
+```
+
+Obtendremos el dataframe para el uso de biblioteca.
+
+```{r}
+promedio.uso.biblio.mtx <- matrix(1:1000,nrow=1000,ncol=1)
+for (i in 1:1000) {
+  redondeo <- matrix(1:12,nrow=1,ncol=12)
+  for(j in 1:12){
+    redondeo[j] <- round(uso.biblioteca.totales[[i]][,j],0)
+  }
+  #print(redondeo)
+  promedio.uso.biblio.mtx[i] <- mean(redondeo) 
+}
+rownames(promedio.uso.biblio.mtx) <- 1:1000
+promedio.uso.biblio.df <- as.data.frame(promedio.uso.biblio.mtx)
+colnames(promedio.uso.biblio.df) <- c("prom.uso.biblio")
+str(promedio.uso.biblio.df)
+summary(promedio.uso.biblio.df)
+#promedio.uso.biblio.df
+head(promedio.uso.biblio.df,3)
+```
+
+Para determinar el uso significativo de ese promedio de uso. 
+Es decir si el uso es 12 esta muy bien, seria el maximo. Si seleccionamos el primer alumno vemos que solo visito 2 veces de manera significativa la biblioteca.
+
+```{r}
+suma <- 0
+for (i in 1:1000) {
+  suma <- suma + round(sum(uso.biblioteca.totales[[i]][,1:12]))
+}
+suma
+uso.anual<- 258
+uso.por.materia <- 258/12 #nos servira como umbral
+uso.por.materia 
+
+uso.biblioteca.mtx <- matrix(1:1000,nrow=1000,ncol=1)
+for (i in 1:1000) { # determinaremos cuantas veces la uso de manera significativa el alumno
+  uso.biblioteca.mtx[i] <- sum(uso.biblioteca.totales[[i]][,1:12]>uso.por.materia)
+}
+uso.biblioteca.mtx[[1]]
+```
+
+
+```{r}
+rownames(uso.biblioteca.mtx) <- 1:1000
+uso.biblioteca.df <- as.data.frame(uso.biblioteca.mtx)
+colnames(uso.biblioteca.df) <- c("uso.biblio")
+str(uso.biblioteca.df)
+summary(uso.biblioteca.df)
+#uso.biblioteca.df
+head(uso.biblioteca.df,3)
+uso.biblioteca.df$uso.biblio <- as.numeric(uso.biblioteca.df$uso.biblio)
+str(uso.biblioteca.df)
+summary(uso.biblioteca.df)
+```
+
+
+### Uso de la Plataforma ###
+Redondear, vector. 
+
+```{r}
+setwd(local.path)
+load("UsoPlataforma.R") #cargamos uso de la plataforma
+class(uso.plataforma.totales) # para saber de que tipo es, en este caso es una lista
+length(uso.plataforma.totales) # tamano del objecto, en este caso son 1000 Alumnos
+class(uso.plataforma.totales[[1]]) # para obtener que tipo es el objecto dentro de la lista, es matriz, por lo tanto tenemos una lista de matrices
+dim(uso.plataforma.totales[[1]]) # el tamano de cada matriz 1 x 54
+```
+
+Seleccionamos los datos del primer alumnos, podemos ver que es la frecuencia de visitas a la plataforma, por lo que tendremos que redondear.
+
+```{r}
+uso.plataforma.totales[[1]]
+```
+
+Obtendremos el dataframe para el uso de la plataforma.
+
+```{r}
+promedio.uso.plataforma.mtx <- matrix(1:1000,nrow=1000,ncol=1)
+for (i in 1:1000) {
+  redondeo <- matrix(1:12,nrow=1,ncol=12)
+  for(j in 1:12){
+    redondeo[j] <- round(uso.plataforma.totales[[i]][,j],0)
+  }
+  #print(redondeo)
+  promedio.uso.plataforma.mtx[i] <- mean(redondeo) 
+}
+promedio.uso.plataforma.mtx[[1]]
+```
+
+```{r}
+rownames(promedio.uso.plataforma.mtx) <- 1:1000
+promedio.uso.plataforma.df <- as.data.frame(promedio.uso.plataforma.mtx)
+colnames(promedio.uso.plataforma.df) <- c("prom.uso.platf")
+str(promedio.uso.plataforma.df)
+summary(promedio.uso.plataforma.df)
+#promedio.uso.plataforma.df
+head(promedio.uso.plataforma.df,3)
+promedio.uso.plataforma.df$prom.uso.platf <- as.numeric(promedio.uso.plataforma.df$prom.uso.platf)
+str(promedio.uso.plataforma.df)
+summary(promedio.uso.plataforma.df)
+```
+
+
+Para determinar el uso significativo de ese promedio de uso. 
+Es decir si el uso es 12 esta muy bien, seria el maximo. Si seleccionamos el primer alumno vemos que solo uso 2 veces de manera significativa la plataforma.
+
+```{r}
+suma <- 0
+for (i in 1:1000) {
+  suma <- suma + round(sum(uso.plataforma.totales[[i]][,1:12]))
+}
+suma
+uso.anual<- 612
+uso.por.materia <- 612/12 #nos servira como umbral
+uso.por.materia 
+
+uso.plataforma.mtx <- matrix(1:1000,nrow=1000,ncol=1)
+for (i in 1:1000) { # determinaremos cuantas veces la uso de manera significativa el alumno
+  uso.plataforma.mtx[i] <- sum(uso.plataforma.totales[[i]][,1:12]>uso.por.materia)
+}
+uso.plataforma.mtx[[1]]
+```
+
+
+```{r}
+rownames(uso.plataforma.mtx) <- 1:1000
+uso.plataforma.df <- as.data.frame(uso.plataforma.mtx)
+colnames(uso.plataforma.df) <- c("uso.platf")
+str(uso.plataforma.df)
+summary(uso.plataforma.df)
+#uso.plataforma.df
+head(uso.plataforma.df,3)
+uso.plataforma.df$uso.platf <- as.numeric(uso.plataforma.df$uso.platf)
+str(uso.plataforma.df)
+summary(uso.plataforma.df)
+```
+
+
+### Apartado de Libros ###
+
+Numero de libros/articulos digitales que se apartaron por materia.
+
+```{r}
+setwd(local.path)
+load("ApartadoDeLibros.R")# cargamos apartado de libros
+class(separacion.libros.totales) # para saber de que tipo es, en este caso es una lista
+length(separacion.libros.totales) # tamano del objecto, en este caso son 1000 Alumnos
+class(separacion.libros.totales[[1]]) # para obtener que tipo es el objecto dentro de la lista, es matriz, por lo tanto tenemos una lista de matrices
+dim(separacion.libros.totales[[1]]) # el tamano de cada matriz 1 x 54
+```
+
+```{r}
+separacion.libros.totales[[1]]
+```
+
+Obtendremos el dataframe para el promedio del apartado de libros.
+
+```{r}
+separacion.libros.totales.mtx <- matrix(1:1000,nrow=1000,ncol=1)
+for (i in 1:1000) {
+  separacion.libros.totales.mtx[i] <- mean(separacion.libros.totales[[i]][,1:12]) 
+}
+rownames(separacion.libros.totales.mtx) <- 1:1000
+apartado.libros.df <- as.data.frame(separacion.libros.totales.mtx)
+colnames(apartado.libros.df) <- c("prom.apartado.libros")
+str(apartado.libros.df)
+summary(apartado.libros.df)
+#apartado.libros.df
+head(apartado.libros.df,3)
+```
+
+
+### Becas ###
+
+Definicion:
+* 1 Becado
+
+* 0 No becado
+
+```{r}
+setwd(local.path)
+load("Becas.R") #cargamos Becas
+class(distribucion.becas) # para saber de que tipo es, en este caso es un vector numerico
+length(distribucion.becas) # tamano del objecto, en este caso son 1000 Alumnos
+class(distribucion.becas[[1]]) # para obtener que tipo es el objecto dentro del vector que es un numero
+sum(distribucion.becas[[1]]) 
+```
+
+```{r}
+becas.alumnos <- matrix(1:1000, nrow=1000, ncol=1)
+
+for(i in 1:1000){
+    becas.alumnos[i] <- distribucion.becas[i]
+}
+rownames(becas.alumnos)  <- 1:1000
+becas.alumnos.df <- as.data.frame(becas.alumnos)
+colnames(becas.alumnos.df) <- c('beca')
+becas.alumnos.df$beca <- as.factor(becas.alumnos.df$beca)
+#becas.alumnos.df
+head(becas.alumnos.df,3)
+```
+
+### Historial de Pagos ###
+
+Definicion:
+
+* 2 pago a tiempo
+* 1 pago tarde
+* 0 no pago
+
+```{r}
+setwd(local.path)
+load("HistorialPagos.R") # cargamos pagos
+class(registro.pagos) # para saber de que tipo es, en este caso es una lista
+length(registro.pagos) # tamano del objecto, en este caso son 1000 Alumnos
+class(registro.pagos[[1]]) # para obtener que tipo es el objecto dentro de la lista, es matriz, por lo tanto tenemos una lista de matrices
+dim(registro.pagos[[1]]) # la matriz es de una tamano de 4x9
+
+```
+
+Es decir cada alumno realiza 4 pagos por semestre, por lo que nosotros solo estaremos interesados en las primeras dos columnas.
+
+```{r}
+registro.pagos[[1]]
+```
+ 
+ Obtendremos el promedio de los pagos respecto  un umbral
+ Obtendremos el datframe para pagos
+
+```{r}
+promedio.pagos.mtx <- matrix(,nrow=0,ncol=1)
+for (i in 1:1000) {
+  datos.pagos <- registro.pagos[[i]]
+  pagos.vct <- vector()
+  pagos.vct[1] <- mean(datos.pagos[,1:2]) 
+  promedio.pagos.mtx <- rbind(promedio.pagos.mtx,
+                              pagos.vct)
+}
+class(promedio.pagos.mtx)
+rownames(promedio.pagos.mtx) <- 1:1000
+#podremos un umbral
+promedio.pagos.mtx[promedio.pagos.mtx < 1.875] <- 0
+
+```
+
+```{r}
+promedio.pagos.df <- as.data.frame(promedio.pagos.mtx)
+colnames(promedio.pagos.df) <- c("prom.pagos")
+str(promedio.pagos.df)
+summary(promedio.pagos.df)
+#promedio.pagos.df
+head(promedio.pagos.df,3)
+```
+
+### Cambio de Carrera ##
+
+Definicion:
+
+* 1 se cambio, estuvo en una carrera anterior y ya lleva los dos semestres que estamos evaluando.
+* 0 no sa ha cambiado
+
+Esta es muy importate porque indica inestabilidad en el alumno,debe considerarse como que ya deserto una vez
+
+```{r}
+setwd(local.path)
+load("CambioCarrera.R") # cargamos Cambio de carrera
+head(cambio.carrera)
+class(cambio.carrera) # para saber de que tipo es, en este caso es un vector numerico
+length(cambio.carrera) # tamano del objecto, en este caso son 1000 Alumnos
+class(cambio.carrera[[1]]) # para obtener que tipo es el objecto dentro del vector que es un numero
+sum(cambio.carrera[[1]]) 
+```
+
+
+```{r}
+cambio.carrera.mtx <- matrix(1:1000, nrow=1000, ncol=1)
+
+for(i in 1:1000){
+   cambio.carrera.mtx[i] <- cambio.carrera[i]
+}
+rownames(cambio.carrera.mtx) <- 1:1000
+cambio.carrera.df <- as.data.frame(cambio.carrera.mtx)
+colnames(cambio.carrera.df) <- c('cambio.carrera')
+cambio.carrera.df$cambio.carrera <- as.factor(cambio.carrera.df$cambio.carrera)
+#cambio.carrera.df
+head(cambio.carrera.df,3)
+```
+
+##Integracion de los datos
+
+Juntamos todos los datos en un solo dataframe integrado.
+
+```{r}
+datos.integrados.df <- cbind.data.frame(perfil.alumnos,
+                                     becas.alumnos.df,
+                              asistencias.totales.df,
+                              promedio.trabajos.df,
+                              promedio.examenes.df,
+                              promedio.pagos.df,
+                              promedio.uso.biblio.df,
+                              uso.biblioteca.df,
+                              promedio.uso.plataforma.df,
+                              uso.plataforma.df,
+                              apartado.libros.df,
+                              cambio.carrera.df)
+str(datos.integrados.df)
+summary(datos.integrados.df)
+#datos.integrados.df
+head(datos.integrados.df,3)
+```
+
+Guardamos los Datos para el siguiente paso
+```{r}
+setwd(local.path)
+save(datos.integrados.df, file="datos.integrados.R")
+getwd()
+load("datos.integrados.R")
+#datos.integrados.df
+head(datos.integrados.df,3)
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
