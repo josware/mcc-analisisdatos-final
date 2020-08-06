@@ -22,7 +22,7 @@ Aqui se especifican las variables generales necesarias para todo el proyecto
 
 ```{r}
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/luisfgo/Documents/MCC/1V Analitica de Datos/ProyectoFinal/mcc-analisisdatos-final"
+user.path <- "/Users/jos/Downloads/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")
@@ -36,11 +36,11 @@ library(png)
 library(corrplot)
 source("http://www.sthda.com/upload/rquery_cormat.r")
 col<- colorRampPalette(c("blue", "white", "red"))(20)
-#install.packages("factoextra")
-#install.packages("FactoMineR")
+install.packages("factoextra")
+install.packages("FactoMineR")
 library(FactoMineR)
 library(factoextra)
-#install.packages('neuralnet')
+install.packages('neuralnet')
 library(neuralnet)
 ```
 
@@ -98,27 +98,55 @@ attributes(nn.result)
 nn.result$net.result
 ```
 
-Comparar
+
+## Matríz de confusión
 ```{r}
 rounded.prediction <- round(nn.result$net.result)
-str(nn.result$net.result)
-nrow(rounded.prediction)
 error <- vector(mode="numeric", length=nrow(rounded.prediction))
 compare.output <-  cbind(alumnos.test$desercion, rounded.prediction, error)
 colnames(compare.output) <- c("entrada","prediccion","error")
 compare.output <- as.data.frame(compare.output)
-#compare.output
-#compare.output$error <- as.numeric(compare.output$entrada) - as.numeric(compare.output$prediccion)
-count <- 0
-for(i in 200){
-        if(compare.output[i,]$entrada == compare.output[i,]$prediccion){
-                compare.output[i,]$error <- 1
-                count <- count +1
+
+mzc.true.positives <- 0
+mzc.true.negatives <- 0
+mzc.false.positives <- 0
+mzc.false.negatives <- 0
+
+for(i in 1:200){
+
+        if (compare.output[i,]$entrada == 1){
+                
+                if(compare.output[i,]$prediccion == 1){
+                        mzc.true.positives <- mzc.true.positives + 1
+                }
+                else{
+                        mzc.false.positives <- mzc.false.positives + 1
+                }
         }
-        
+        else{
+                if(compare.output[i,]$prediccion == 0){
+                        mzc.true.negatives <- mzc.true.negatives + 1
+                }
+                else{
+                         mzc.false.negatives <- mzc.false.negatives + 1
+                }
+                
+        }
 }
-print((count/200)-1)
-compare.output
+
+print(paste("True positives:",mzc.true.positives))
+print(paste("True negatives:",mzc.true.negatives))
+print(paste("False positives:",mzc.false.positives))
+print(paste("False negatives:",mzc.false.negatives))
+```
+
+## Accuracy
+```{r}
+#Accuracy = (TP + TN) / (TP + TN + FP + FN)
+mzc.accuracy <- (mzc.true.positives + mzc.true.negatives) /
+        (mzc.true.positives + mzc.true.negatives + mzc.false.positives + mzc.false.negatives)
+print(paste("Accuracy= ", (mzc.accuracy * 100), "%", sep = ""))
+
 ```
 
 ## Identificacion de desertores ##
