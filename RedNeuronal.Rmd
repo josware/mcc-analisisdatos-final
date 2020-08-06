@@ -22,7 +22,7 @@ Aqui se especifican las variables generales necesarias para todo el proyecto
 
 ```{r}
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
+user.path <- "/Users/luisfgo/Documents/MCC/1V Analitica de Datos/ProyectoFinal/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")
@@ -54,6 +54,7 @@ head(alumnos.training,3)
 load("alumnos.test.R")
 #alumnos.test
 head(alumnos.test,3)
+
 ```
 
 
@@ -66,7 +67,7 @@ str(alumnos.training)
 ## Formula 1 ##
  
 ```{r}
-formula1 <- beca ~ .
+formula1 <- desercion ~ .
 ```
 
 ## Neural Net ##
@@ -75,7 +76,7 @@ formula1 <- beca ~ .
 set.seed(1234)
 neural.net.1 <- neuralnet(formula = formula1, 
                           data  = alumnos.training,
-                          hidden = c(15,10,5), #numero de capas iniciales, medias y finales 
+                          hidden = c(16,5,5), #numero de capas iniciales, medias y finales 
                           threshold = 0.005, #el threshold del perceptron para arrojar una salida iniciamos con 0.01
                           stepmax = 1e+07, #la cantidad de veces q lo queremos correr
                           lifesign = "full") # para ver q hace R
@@ -99,17 +100,60 @@ nn.result$net.result
 
 Comparar
 ```{r}
-compare.output <-  cbind(alumnos.test$beca, alumnos.training$beca,nn.result$net.result)
-colnames(compare.output) <- c("entrada","valor.correcto","prediccion")
-compare.output
-#compare.output$error <- compare.output$valor.correcto - compare.output$prediccion
+rounded.prediction <- round(nn.result$net.result)
+str(nn.result$net.result)
+nrow(rounded.prediction)
+error <- vector(mode="numeric", length=nrow(rounded.prediction))
+compare.output <-  cbind(alumnos.test$desercion, rounded.prediction, error)
+colnames(compare.output) <- c("entrada","prediccion","error")
+compare.output <- as.data.frame(compare.output)
+#compare.output
+#compare.output$error <- as.numeric(compare.output$entrada) - as.numeric(compare.output$prediccion)
+count <- 0
+for(i in 200){
+        if(compare.output[i,]$entrada == compare.output[i,]$prediccion){
+                compare.output[i,]$error <- 1
+                count <- count +1
+        }
+        
+}
+print((count/200)-1)
 compare.output
 ```
 
 ## Identificacion de desertores ##
  
 ```{r}
+setwd(local.path)
+load("alumnos.nuevos.R")
+head(alumnos.nuevos, 5)
+str(alumnos.nuevos)
+```
+## Evaluar en Red Neuronal
+```{r}
+nuevos.result <- compute(neural.net.1, alumnos.nuevos)
+attributes(nuevos.result)
+nuevos.result$net.result <- round(nuevos.result$net.result)
+nuevos.result$net.result
+class(nuevos.result$net.result)
+```
 
+```{r}
+#str(nuevos.result)
+alumnos.desertores.df <- as.data.frame(nuevos.result[[2]])
+desercion <- vector(mode="numeric", length = nrow(alumnos.nuevos))
+
+desercion <- alumnos.desertores.df$V1
+
+alumnos.desertores.df <- cbind(alumnos.nuevos, desercion)
+alumnos.desertores.df
+
+```
+ 
+## Seleccionar alumnos que se predicen van a reprobar 
+```{r}
+setwd(local.path)
+save(alumnos.desertores.df, file="alumnos.desertores.df.R")
 ```
  
 
