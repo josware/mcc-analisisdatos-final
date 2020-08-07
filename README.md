@@ -17,12 +17,12 @@
 3. Mentoría, 200 dólares. 
 4. Consultoría psicológica, 400 dólares. 
 5. Boleto a evento integración, 50 dólares.
-6. Asesor??a individual, 250 dólares.
+6. Asesoría individual, 250 dólares.
 7. Cursos remediales, 2500 dólares
 8. Visita a empresa, 50 dólares
-9. Ex??men extemporáneo, 100 dólares
-10. plótica motivacional, 50 dólares 
-11. viaje recreativo, 10 dólares
+9. Exámen extemporáneo, 100 dólares
+10. Plática motivacional, 50 dólares 
+11. Viaje recreativo, 10 dólares
 
 para este caso, tenemos 20 alumnos y 11 medidas. Esto representa un cromosoma binario de tamaño 20 x 11 = 220
 
