@@ -35,19 +35,17 @@ Aqui se especifican todas las dependencias que se utilizaran en el proyecto
 #install.packages("png")
 #install.packages("corrplot")
 #install.packages("cowplot")
+#install.packages("pca")
+#install.packages("factoextra")
+#install.packages("FactoMineR")
 library("cowplot")
 library(png)
 library(corrplot)
 source("http://www.sthda.com/upload/rquery_cormat.r")
 col<- colorRampPalette(c("blue", "white", "red"))(20)
-#install.packages("factoextra")
-#install.packages("FactoMineR")
 library(FactoMineR)
 library(factoextra)
 library(ggplot2)
-```
-```{r}
-install.packages("pca")
 ```
 
 Cargamos los datos integrados
@@ -95,14 +93,11 @@ alumnos.nuevos$beca <- as.numeric(alumnos.nuevos$beca)
 alumnos.nuevos$cambio.carrera <- as.numeric(alumnos.nuevos$cambio.carrera)
 str(alumnos.nuevos)
 save(alumnos.nuevos, file="alumnos.nuevos.R")
+head(alumnos.nuevos,5)
 ```
 
 ```{r}
 summary(alumnos.nuevos)
-```
-
-```{r}
-summary(alumnos.actuales)
 ```
 
 ```{r}
@@ -112,8 +107,12 @@ alumnos.actuales$evalucion.socioeconomica <- as.numeric(alumnos.actuales$evaluci
 alumnos.actuales$beca <- as.numeric(alumnos.actuales$beca)
 alumnos.actuales$cambio.carrera <- as.numeric(alumnos.actuales$cambio.carrera)
 str(alumnos.actuales)
+head(alumnos.actuales,5)
 ```
 
+```{r}
+summary(alumnos.actuales)
+```
 
 ## Analisis de Correlacion ##
 
@@ -220,7 +219,7 @@ alumnos.actuales <- cbind(alumnos.actuales, desercion)
 alumnos.actuales[km.out$cluster==3,]$desercion <- 1
 
 str(alumnos.actuales)
-alumnos.actuales
+head(alumnos.actuales,5)
 ```
 
 ## PCA ##
@@ -281,7 +280,13 @@ alumnos.training$evalucion.socioeconomica <- as.numeric(alumnos.training$evaluci
 alumnos.training$beca <- as.numeric(alumnos.training$beca)
 alumnos.training$cambio.carrera <- as.numeric(alumnos.training$cambio.carrera)
 str(alumnos.training)
+head(alumnos.training,5)
 ```
+
+```{r}
+summary(alumnos.training)
+```
+
 
 ```{r}
 alumnos.test$genero <- as.numeric(alumnos.test$genero)
@@ -290,7 +295,13 @@ alumnos.test$evalucion.socioeconomica <- as.numeric(alumnos.test$evalucion.socio
 alumnos.test$beca <- as.numeric(alumnos.test$beca)
 alumnos.test$cambio.carrera <- as.numeric(alumnos.test$cambio.carrera)
 str(alumnos.test)
+head(alumnos.test,5)
 ```
+
+```{r}
+summary(alumnos.test)
+```
+
 
 ```{r}
 setwd(local.path)

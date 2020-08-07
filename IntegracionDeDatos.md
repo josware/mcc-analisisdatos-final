@@ -1,6 +1,6 @@
 Proyecto Final - Analisis de Datos
 ================
-Anna Casillas
+Casillas, A., González, L., Gómez, J.
 July 31,2020
 
 # Integracion de datos
@@ -18,7 +18,7 @@ proyecto
 
 ``` r
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/jos/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
+user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")
@@ -1455,16 +1455,16 @@ datos.integrados.df <- cbind.data.frame(perfil.alumnos,
                               promedio.trabajos.df,
                               promedio.examenes.df,
                               promedio.pagos.df,
-                              promedio.uso.biblio.df,
+                              #promedio.uso.biblio.df,
                               uso.biblioteca.df,
-                              promedio.uso.plataforma.df,
+                              #promedio.uso.plataforma.df,
                               uso.plataforma.df,
                               apartado.libros.df,
                               cambio.carrera.df)
 str(datos.integrados.df)
 ```
 
-    ## 'data.frame':    1000 obs. of  18 variables:
+    ## 'data.frame':    1000 obs. of  16 variables:
     ##  $ genero                  : Factor w/ 2 levels "1","2": 2 2 2 1 2 2 2 2 1 2 ...
     ##  $ admision.letras         : num  60.1 59.1 53.1 57 61.5 ...
     ##  $ admision.numeros        : num  35.2 33.2 21.3 29 37.9 ...
@@ -1477,9 +1477,7 @@ str(datos.integrados.df)
     ##  $ prom.trab               : num  12.5 13.1 12.5 14.2 12.4 ...
     ##  $ prom.exam               : num  12.5 13.1 12.5 14.2 12.4 ...
     ##  $ prom.pagos              : num  2 0 0 2 2 0 0 2 2 2 ...
-    ##  $ prom.uso.biblio         : num  15.5 18.2 15.2 25.4 15.8 ...
     ##  $ uso.biblio              : num  2 3 1 7 2 5 11 6 1 7 ...
-    ##  $ prom.uso.platf          : num  38.5 42.8 35.5 58.5 36.2 ...
     ##  $ uso.platf               : num  2 3 1 7 2 5 11 6 1 7 ...
     ##  $ prom.apartado.libros    : num  1.25 1.33 1.08 1.92 1.08 ...
     ##  $ cambio.carrera          : Factor w/ 2 levels "0","1": 1 1 1 1 1 1 1 1 1 1 ...
@@ -1504,29 +1502,21 @@ summary(datos.integrados.df)
     ##                           3rd Qu.:17.00           3rd Qu.:0.9362  
     ##                           Max.   :20.00           Max.   :0.9479  
     ##                                                                   
-    ##    prom.trab       prom.exam       prom.pagos    prom.uso.biblio
-    ##  Min.   :11.55   Min.   :11.54   Min.   :0.000   Min.   :11.58  
-    ##  1st Qu.:12.62   1st Qu.:12.60   1st Qu.:0.000   1st Qu.:16.75  
-    ##  Median :13.35   Median :13.33   Median :1.875   Median :20.92  
-    ##  Mean   :13.46   Mean   :13.43   Mean   :1.415   Mean   :21.67  
-    ##  3rd Qu.:14.15   3rd Qu.:14.12   3rd Qu.:2.000   3rd Qu.:25.67  
-    ##  Max.   :16.22   Max.   :16.23   Max.   :2.000   Max.   :39.67  
-    ##                                                                 
-    ##    uso.biblio     prom.uso.platf    uso.platf      prom.apartado.libros
-    ##  Min.   : 0.000   Min.   :28.17   Min.   : 0.000   Min.   :0.8333      
-    ##  1st Qu.: 2.000   1st Qu.:39.08   1st Qu.: 2.000   1st Qu.:1.2500      
-    ##  Median : 5.000   Median :48.62   Median : 5.000   Median :1.5000      
-    ##  Mean   : 5.042   Mean   :50.94   Mean   : 5.042   Mean   :1.5826      
-    ##  3rd Qu.: 8.000   3rd Qu.:60.29   3rd Qu.: 8.000   3rd Qu.:1.9167      
-    ##  Max.   :12.000   Max.   :96.83   Max.   :12.000   Max.   :2.8333      
-    ##                                                                        
-    ##  cambio.carrera
-    ##  0:900         
-    ##  1:100         
-    ##                
-    ##                
-    ##                
-    ##                
+    ##    prom.trab       prom.exam       prom.pagos      uso.biblio    
+    ##  Min.   :11.55   Min.   :11.54   Min.   :0.000   Min.   : 0.000  
+    ##  1st Qu.:12.62   1st Qu.:12.60   1st Qu.:0.000   1st Qu.: 2.000  
+    ##  Median :13.35   Median :13.33   Median :1.875   Median : 5.000  
+    ##  Mean   :13.46   Mean   :13.43   Mean   :1.415   Mean   : 5.042  
+    ##  3rd Qu.:14.15   3rd Qu.:14.12   3rd Qu.:2.000   3rd Qu.: 8.000  
+    ##  Max.   :16.22   Max.   :16.23   Max.   :2.000   Max.   :12.000  
+    ##                                                                  
+    ##    uso.platf      prom.apartado.libros cambio.carrera
+    ##  Min.   : 0.000   Min.   :0.8333       0:900         
+    ##  1st Qu.: 2.000   1st Qu.:1.2500       1:100         
+    ##  Median : 5.000   Median :1.5000                     
+    ##  Mean   : 5.042   Mean   :1.5826                     
+    ##  3rd Qu.: 8.000   3rd Qu.:1.9167                     
+    ##  Max.   :12.000   Max.   :2.8333                     
     ## 
 
 ``` r
@@ -1542,14 +1532,10 @@ head(datos.integrados.df,3)
     ## 1                        4            16    0   0.8750000  12.47364  12.51429
     ## 2                        4            15    0   0.8567708  13.13827  13.10560
     ## 3                        4            13    0   0.8424479  12.53885  12.51326
-    ##   prom.pagos prom.uso.biblio uso.biblio prom.uso.platf uso.platf
-    ## 1          2        15.50000          2          38.50         2
-    ## 2          0        18.16667          3          42.75         3
-    ## 3          0        15.25000          1          35.50         1
-    ##   prom.apartado.libros cambio.carrera
-    ## 1             1.250000              0
-    ## 2             1.333333              0
-    ## 3             1.083333              0
+    ##   prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera
+    ## 1          2          2         2             1.250000              0
+    ## 2          0          3         3             1.333333              0
+    ## 3          0          1         1             1.083333              0
 
 Guardamos los Datos para el siguiente paso
 
@@ -1575,14 +1561,10 @@ head(datos.integrados.df,3)
     ## 1                        4            16    0   0.8750000  12.47364  12.51429
     ## 2                        4            15    0   0.8567708  13.13827  13.10560
     ## 3                        4            13    0   0.8424479  12.53885  12.51326
-    ##   prom.pagos prom.uso.biblio uso.biblio prom.uso.platf uso.platf
-    ## 1          2        15.50000          2          38.50         2
-    ## 2          0        18.16667          3          42.75         3
-    ## 3          0        15.25000          1          35.50         1
-    ##   prom.apartado.libros cambio.carrera
-    ## 1             1.250000              0
-    ## 2             1.333333              0
-    ## 3             1.083333              0
+    ##   prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera
+    ## 1          2          2         2             1.250000              0
+    ## 2          0          3         3             1.333333              0
+    ## 3          0          1         1             1.083333              0
 
 Note that the `echo = FALSE` parameter was added to the code chunk to
 prevent printing of the R code that generated the plot.

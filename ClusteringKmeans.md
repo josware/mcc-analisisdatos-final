@@ -1,6 +1,6 @@
 Proyecto Final - Clustering Kmeans
 ================
-Anna Casillas
+Casillas, A., González, L., Gómez, J.
 Agosto 1,2020
 
 # Clustering Kmeans
@@ -30,6 +30,27 @@ proyecto
 ``` r
 #Dependencies
 #install.packages("png")
+#install.packages("corrplot")
+#install.packages("cowplot")
+#install.packages("pca")
+#install.packages("factoextra")
+#install.packages("FactoMineR")
+library("cowplot")
+```
+
+    ## 
+    ## ********************************************************
+
+    ## Note: As of version 1.0.0, cowplot does not change the
+
+    ##   default ggplot2 theme anymore. To recover the previous
+
+    ##   behavior, execute:
+    ##   theme_set(theme_cowplot())
+
+    ## ********************************************************
+
+``` r
 library(png)
 library(corrplot)
 ```
@@ -39,8 +60,6 @@ library(corrplot)
 ``` r
 source("http://www.sthda.com/upload/rquery_cormat.r")
 col<- colorRampPalette(c("blue", "white", "red"))(20)
-#install.packages("factoextra")
-#install.packages("FactoMineR")
 library(FactoMineR)
 library(factoextra)
 ```
@@ -49,12 +68,16 @@ library(factoextra)
 
     ## Welcome! Want to learn more? See two factoextra-related books at https://goo.gl/ve3WBa
 
+``` r
+library(ggplot2)
+```
+
 Cargamos los datos integrados
 
 ``` r
 setwd(local.path)
 load("datos.integrados.R")
-#datos.integrados.df
+#str(datos.integrados.df)
 head(datos.integrados.df,3)
 ```
 
@@ -66,14 +89,10 @@ head(datos.integrados.df,3)
     ## 1                        4            16    0   0.8750000  12.47364  12.51429
     ## 2                        4            15    0   0.8567708  13.13827  13.10560
     ## 3                        4            13    0   0.8424479  12.53885  12.51326
-    ##   prom.pagos prom.uso.biblio uso.biblio prom.uso.platf uso.platf
-    ## 1          2        15.50000          2          38.50         2
-    ## 2          0        18.16667          3          42.75         3
-    ## 3          0        15.25000          1          35.50         1
-    ##   prom.apartado.libros cambio.carrera
-    ## 1             1.250000              0
-    ## 2             1.333333              0
-    ## 3             1.083333              0
+    ##   prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera
+    ## 1          2          2         2             1.250000              0
+    ## 2          0          3         3             1.333333              0
+    ## 3          0          1         1             1.083333              0
 
 ## Particion de Datos
 
@@ -81,8 +100,29 @@ Separamos 100 alumnos que no entraran en Kmeans.
 
 ``` r
 set.seed(1234)
+str(datos.integrados.df)
+```
 
-alumnos.gen <- sample(x=c(0,1),size=nrow(datos.integrados.df), replace=TRUE,prob = c(0.9,0.1))
+    ## 'data.frame':    1000 obs. of  16 variables:
+    ##  $ genero                  : Factor w/ 2 levels "1","2": 2 2 2 1 2 2 2 2 1 2 ...
+    ##  $ admision.letras         : num  60.1 59.1 53.1 57 61.5 ...
+    ##  $ admision.numeros        : num  35.2 33.2 21.3 29 37.9 ...
+    ##  $ promedio.preparatoria   : num  70.3 67.2 60 61 74.4 ...
+    ##  $ edad.ingreso            : Factor w/ 15 levels "11","12","13",..: 8 7 5 6 8 8 5 7 4 7 ...
+    ##  $ evalucion.socioeconomica: Factor w/ 4 levels "1","2","3","4": 4 4 4 4 4 4 4 4 4 4 ...
+    ##  $ nota.conducta           : num  16 15 13 14 16 16 13 15 12 15 ...
+    ##  $ beca                    : Factor w/ 2 levels "0","1": 1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ Asist.Total             : num  0.875 0.857 0.842 0.915 0.844 ...
+    ##  $ prom.trab               : num  12.5 13.1 12.5 14.2 12.4 ...
+    ##  $ prom.exam               : num  12.5 13.1 12.5 14.2 12.4 ...
+    ##  $ prom.pagos              : num  2 0 0 2 2 0 0 2 2 2 ...
+    ##  $ uso.biblio              : num  2 3 1 7 2 5 11 6 1 7 ...
+    ##  $ uso.platf               : num  2 3 1 7 2 5 11 6 1 7 ...
+    ##  $ prom.apartado.libros    : num  1.25 1.33 1.08 1.92 1.08 ...
+    ##  $ cambio.carrera          : Factor w/ 2 levels "0","1": 1 1 1 1 1 1 1 1 1 1 ...
+
+``` r
+alumnos.gen <- sample(x=c(0,1),size=nrow(datos.integrados.df), replace=TRUE,prob = c(0.92,0.079))
 
 #alumnos.gen
 head(alumnos.gen,5)
@@ -91,8 +131,22 @@ head(alumnos.gen,5)
     ## [1] 0 0 0 0 0
 
 ``` r
-alumnos.nuevos <- datos.integrados.df[alumnos.gen==1,]
+#90%
 alumnos.actuales <- datos.integrados.df[alumnos.gen==0,]
+nrow(alumnos.actuales)
+```
+
+    ## [1] 900
+
+``` r
+#10%
+alumnos.nuevos <- datos.integrados.df[alumnos.gen==1,]
+nrow(alumnos.nuevos)
+```
+
+    ## [1] 100
+
+``` r
 setwd(local.path)
 save(alumnos.nuevos, file="alumnos.nuevos.R")
 save(alumnos.actuales, file="alumnos.actuales.R")
@@ -101,33 +155,27 @@ save(alumnos.actuales, file="alumnos.actuales.R")
 head(alumnos.nuevos,5)
 ```
 
-    ##    genero admision.letras admision.numeros promedio.preparatoria edad.ingreso
-    ## 14      2        64.93722         44.87445              84.81167           19
-    ## 28      2        55.63921         26.27841              60.00000           16
-    ## 39      1        58.37728         31.75456              65.13184           17
-    ## 81      1        62.96414         40.92828              78.89242           19
-    ## 92      1        59.04259         33.08518              67.12776           17
-    ##    evalucion.socioeconomica nota.conducta beca Asist.Total prom.trab prom.exam
-    ## 14                        4            17    0   0.8828125  12.36401  12.39782
-    ## 28                        4            14    0   0.7669271  12.25492  12.22629
-    ## 39                        4            15    0   0.9296875  13.08116  13.06243
-    ## 81                        2            17    1   0.7851562  12.53885  12.51326
-    ## 92                        3            15    0   0.8203125  12.25492  12.22629
-    ##    prom.pagos prom.uso.biblio uso.biblio prom.uso.platf uso.platf
-    ## 14          2        17.08333          2       41.50000         2
-    ## 28          2        13.91667          0       33.33333         0
-    ## 39          2        18.08333          3       42.08333         3
-    ## 81          0        15.25000          1       35.50000         1
-    ## 92          2        13.91667          0       33.33333         0
-    ##    prom.apartado.libros cambio.carrera
-    ## 14             1.166667              0
-    ## 28             1.000000              0
-    ## 39             1.333333              0
-    ## 81             1.083333              0
-    ## 92             1.000000              0
+    ##     genero admision.letras admision.numeros promedio.preparatoria edad.ingreso
+    ## 14       2        64.93722         44.87445              84.81167           19
+    ## 39       1        58.37728         31.75456              65.13184           17
+    ## 81       1        62.96414         40.92828              78.89242           19
+    ## 113      2        57.67933         30.35865              63.03798           17
+    ## 117      2        65.19962         45.39924              85.59885           20
+    ##     evalucion.socioeconomica nota.conducta beca Asist.Total prom.trab prom.exam
+    ## 14                         4            17    0   0.8828125  12.36401  12.39782
+    ## 39                         4            15    0   0.9296875  13.08116  13.06243
+    ## 81                         2            17    1   0.7851562  12.53885  12.51326
+    ## 113                        4            15    0   0.9309896  13.58561  13.59659
+    ## 117                        4            18    0   0.9479167  15.08562  15.07159
+    ##     prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera
+    ## 14       2.000          2         2             1.166667              0
+    ## 39       2.000          3         3             1.333333              0
+    ## 81       0.000          1         1             1.083333              0
+    ## 113      2.000          6         6             1.666667              0
+    ## 117      1.875         10        10             2.166667              0
 
 ``` r
-#alumnos.actuales
+#Muestra de 5 alumnos.actuales
 head(alumnos.actuales,5)
 ```
 
@@ -143,253 +191,97 @@ head(alumnos.actuales,5)
     ## 3                        4            13    0   0.8424479  12.53885  12.51326
     ## 4                        4            14    0   0.9153646  14.21924  14.17651
     ## 5                        4            16    0   0.8437500  12.44557  12.39884
-    ##   prom.pagos prom.uso.biblio uso.biblio prom.uso.platf uso.platf
-    ## 1          2        15.50000          2       38.50000         2
-    ## 2          0        18.16667          3       42.75000         3
-    ## 3          0        15.25000          1       35.50000         1
-    ## 4          2        25.41667          7       58.50000         7
-    ## 5          2        15.75000          2       36.16667         2
-    ##   prom.apartado.libros cambio.carrera
-    ## 1             1.250000              0
-    ## 2             1.333333              0
-    ## 3             1.083333              0
-    ## 4             1.916667              0
-    ## 5             1.083333              0
+    ##   prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera
+    ## 1          2          2         2             1.250000              0
+    ## 2          0          3         3             1.333333              0
+    ## 3          0          1         1             1.083333              0
+    ## 4          2          7         7             1.916667              0
+    ## 5          2          2         2             1.083333              0
+
+``` r
+setwd(local.path)
+alumnos.nuevos$genero <- as.numeric(alumnos.nuevos$genero)
+alumnos.nuevos$edad.ingreso <- as.numeric(alumnos.nuevos$edad.ingreso)
+alumnos.nuevos$evalucion.socioeconomica <- as.numeric(alumnos.nuevos$evalucion.socioeconomica)
+alumnos.nuevos$beca <- as.numeric(alumnos.nuevos$beca)
+alumnos.nuevos$cambio.carrera <- as.numeric(alumnos.nuevos$cambio.carrera)
+str(alumnos.nuevos)
+```
+
+    ## 'data.frame':    100 obs. of  16 variables:
+    ##  $ genero                  : num  2 1 1 2 2 2 2 1 2 2 ...
+    ##  $ admision.letras         : num  64.9 58.4 63 57.7 65.2 ...
+    ##  $ admision.numeros        : num  44.9 31.8 40.9 30.4 45.4 ...
+    ##  $ promedio.preparatoria   : num  84.8 65.1 78.9 63 85.6 ...
+    ##  $ edad.ingreso            : num  9 7 9 7 10 7 5 10 5 10 ...
+    ##  $ evalucion.socioeconomica: num  4 4 2 4 4 4 4 2 4 4 ...
+    ##  $ nota.conducta           : num  17 15 17 15 18 15 13 18 13 18 ...
+    ##  $ beca                    : num  1 1 2 1 1 1 1 2 1 1 ...
+    ##  $ Asist.Total             : num  0.883 0.93 0.785 0.931 0.948 ...
+    ##  $ prom.trab               : num  12.4 13.1 12.5 13.6 15.1 ...
+    ##  $ prom.exam               : num  12.4 13.1 12.5 13.6 15.1 ...
+    ##  $ prom.pagos              : num  2 2 0 2 1.88 ...
+    ##  $ uso.biblio              : num  2 3 1 6 10 3 1 2 8 9 ...
+    ##  $ uso.platf               : num  2 3 1 6 10 3 1 2 8 9 ...
+    ##  $ prom.apartado.libros    : num  1.17 1.33 1.08 1.67 2.17 ...
+    ##  $ cambio.carrera          : num  1 1 1 1 1 1 1 1 1 1 ...
+
+``` r
+save(alumnos.nuevos, file="alumnos.nuevos.R")
+head(alumnos.nuevos,5)
+```
+
+    ##     genero admision.letras admision.numeros promedio.preparatoria edad.ingreso
+    ## 14       2        64.93722         44.87445              84.81167            9
+    ## 39       1        58.37728         31.75456              65.13184            7
+    ## 81       1        62.96414         40.92828              78.89242            9
+    ## 113      2        57.67933         30.35865              63.03798            7
+    ## 117      2        65.19962         45.39924              85.59885           10
+    ##     evalucion.socioeconomica nota.conducta beca Asist.Total prom.trab prom.exam
+    ## 14                         4            17    1   0.8828125  12.36401  12.39782
+    ## 39                         4            15    1   0.9296875  13.08116  13.06243
+    ## 81                         2            17    2   0.7851562  12.53885  12.51326
+    ## 113                        4            15    1   0.9309896  13.58561  13.59659
+    ## 117                        4            18    1   0.9479167  15.08562  15.07159
+    ##     prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera
+    ## 14       2.000          2         2             1.166667              1
+    ## 39       2.000          3         3             1.333333              1
+    ## 81       0.000          1         1             1.083333              1
+    ## 113      2.000          6         6             1.666667              1
+    ## 117      1.875         10        10             2.166667              1
 
 ``` r
 summary(alumnos.nuevos)
 ```
 
-    ##  genero admision.letras admision.numeros promedio.preparatoria  edad.ingreso
-    ##  1:45   Min.   :44.94   Min.   : 4.878   Min.   : 60.00        17     :28   
-    ##  2:75   1st Qu.:57.09   1st Qu.:29.176   1st Qu.: 61.26        19     :26   
-    ##         Median :59.97   Median :34.947   Median : 69.92        18     :16   
-    ##         Mean   :60.08   Mean   :35.167   Mean   : 72.31        16     :15   
-    ##         3rd Qu.:63.28   3rd Qu.:41.556   3rd Qu.: 79.83        20     :13   
-    ##         Max.   :72.00   Max.   :58.992   Max.   :100.00        15     :12   
-    ##                                                                (Other):10   
-    ##  evalucion.socioeconomica nota.conducta   beca    Asist.Total    
-    ##  1: 6                     Min.   : 9.00   0:99   Min.   :0.7578  
-    ##  2:15                     1st Qu.:14.00   1:21   1st Qu.:0.8809  
-    ##  3:16                     Median :15.00          Median :0.9160  
-    ##  4:83                     Mean   :15.52          Mean   :0.9018  
-    ##                           3rd Qu.:17.00          3rd Qu.:0.9362  
-    ##                           Max.   :20.00          Max.   :0.9479  
-    ##                                                                  
-    ##    prom.trab       prom.exam       prom.pagos    prom.uso.biblio
-    ##  Min.   :11.81   Min.   :11.73   Min.   :0.000   Min.   :13.00  
-    ##  1st Qu.:12.55   1st Qu.:12.51   1st Qu.:1.875   1st Qu.:16.65  
-    ##  Median :13.31   Median :13.27   Median :2.000   Median :21.12  
-    ##  Mean   :13.49   Mean   :13.46   Mean   :1.532   Mean   :22.03  
-    ##  3rd Qu.:14.25   3rd Qu.:14.23   3rd Qu.:2.000   3rd Qu.:26.65  
-    ##  Max.   :16.09   Max.   :16.09   Max.   :2.000   Max.   :39.67  
-    ##                                                                 
-    ##    uso.biblio     prom.uso.platf    uso.platf      prom.apartado.libros
-    ##  Min.   : 0.000   Min.   :30.58   Min.   : 0.000   Min.   :0.9167      
-    ##  1st Qu.: 2.000   1st Qu.:38.98   1st Qu.: 2.000   1st Qu.:1.1667      
-    ##  Median : 5.000   Median :50.00   Median : 5.000   Median :1.5000      
-    ##  Mean   : 5.167   Mean   :51.88   Mean   : 5.167   Mean   :1.6090      
-    ##  3rd Qu.: 8.000   3rd Qu.:61.29   3rd Qu.: 8.000   3rd Qu.:1.9375      
-    ##  Max.   :11.000   Max.   :96.83   Max.   :11.000   Max.   :2.8333      
-    ##                                                                        
-    ##  cambio.carrera
-    ##  0:110         
-    ##  1: 10         
-    ##                
-    ##                
-    ##                
-    ##                
-    ## 
-
-``` r
-summary(alumnos.actuales)
-```
-
-    ##  genero  admision.letras admision.numeros promedio.preparatoria  edad.ingreso
-    ##  1:360   Min.   :44.99   Min.   : 4.986   Min.   : 60.00        17     :172  
-    ##  2:520   1st Qu.:56.59   1st Qu.:28.187   1st Qu.: 60.00        18     :151  
-    ##          Median :60.04   Median :35.076   Median : 70.11        19     :140  
-    ##          Mean   :60.05   Mean   :35.107   Mean   : 72.24        16     :125  
-    ##          3rd Qu.:63.67   3rd Qu.:42.335   3rd Qu.: 81.00        20     :100  
-    ##          Max.   :77.71   Max.   :70.411   Max.   :100.00        15     : 86  
-    ##                                                                 (Other):106  
-    ##  evalucion.socioeconomica nota.conducta   beca     Asist.Total    
-    ##  1: 50                    Min.   : 9.00   0:738   Min.   :0.7161  
-    ##  2: 92                    1st Qu.:14.00   1:142   1st Qu.:0.8633  
-    ##  3:136                    Median :15.50           Median :0.9089  
-    ##  4:602                    Mean   :15.53           Mean   :0.8957  
-    ##                           3rd Qu.:17.00           3rd Qu.:0.9362  
-    ##                           Max.   :20.00           Max.   :0.9479  
-    ##                                                                   
-    ##    prom.trab       prom.exam       prom.pagos    prom.uso.biblio
-    ##  Min.   :11.55   Min.   :11.54   Min.   :0.000   Min.   :11.58  
-    ##  1st Qu.:12.63   1st Qu.:12.60   1st Qu.:0.000   1st Qu.:16.75  
-    ##  Median :13.35   Median :13.33   Median :1.875   Median :20.88  
-    ##  Mean   :13.45   Mean   :13.43   Mean   :1.399   Mean   :21.62  
-    ##  3rd Qu.:14.14   3rd Qu.:14.10   3rd Qu.:2.000   3rd Qu.:25.58  
-    ##  Max.   :16.22   Max.   :16.23   Max.   :2.000   Max.   :39.17  
-    ##                                                                 
-    ##    uso.biblio     prom.uso.platf    uso.platf      prom.apartado.libros
-    ##  Min.   : 0.000   Min.   :28.17   Min.   : 0.000   Min.   :0.8333      
-    ##  1st Qu.: 2.000   1st Qu.:39.21   1st Qu.: 2.000   1st Qu.:1.2500      
-    ##  Median : 5.000   Median :48.58   Median : 5.000   Median :1.5000      
-    ##  Mean   : 5.025   Mean   :50.81   Mean   : 5.025   Mean   :1.5790      
-    ##  3rd Qu.: 7.000   3rd Qu.:59.88   3rd Qu.: 7.000   3rd Qu.:1.9167      
-    ##  Max.   :12.000   Max.   :95.75   Max.   :12.000   Max.   :2.7500      
-    ##                                                                        
-    ##  cambio.carrera
-    ##  0:790         
-    ##  1: 90         
-    ##                
-    ##                
-    ##                
-    ##                
-    ## 
-
-Separamos 70-30 training set.
-
-``` r
-set.seed(1234)
-
-alumnos.sep <- sample(x=c(0,1),size=nrow(alumnos.actuales),replace=TRUE,prob = c(0.7,0.3))
-#alumnos.sep
-head(alumnos.sep,3)
-```
-
-    ## [1] 0 0 0
-
-``` r
-alumnos.training <- alumnos.actuales[alumnos.sep==0,]
-alumnos.test <- alumnos.actuales[alumnos.sep==1,]
-setwd(local.path)
-save(alumnos.training, file="alumnos.training.R")
-save(alumnos.test, file="alumnos.test.R")
-
-str(alumnos.training)
-```
-
-    ## 'data.frame':    613 obs. of  18 variables:
-    ##  $ genero                  : Factor w/ 2 levels "1","2": 2 2 2 1 2 2 2 1 2 1 ...
-    ##  $ admision.letras         : num  60.1 59.1 53.1 57 61.9 ...
-    ##  $ admision.numeros        : num  35.2 33.2 21.3 29 38.9 ...
-    ##  $ promedio.preparatoria   : num  70.3 67.2 60 61 75.8 ...
-    ##  $ edad.ingreso            : Factor w/ 15 levels "11","12","13",..: 8 7 5 6 8 5 7 4 7 10 ...
-    ##  $ evalucion.socioeconomica: Factor w/ 4 levels "1","2","3","4": 4 4 4 4 4 4 4 4 4 4 ...
-    ##  $ nota.conducta           : num  16 15 13 14 16 13 15 12 15 18 ...
-    ##  $ beca                    : Factor w/ 2 levels "0","1": 1 1 1 1 1 1 1 1 1 1 ...
-    ##  $ Asist.Total             : num  0.875 0.857 0.842 0.915 0.876 ...
-    ##  $ prom.trab               : num  12.5 13.1 12.5 14.2 13.5 ...
-    ##  $ prom.exam               : num  12.5 13.1 12.5 14.2 13.4 ...
-    ##  $ prom.pagos              : num  2 0 0 2 0 0 2 2 2 2 ...
-    ##  $ prom.uso.biblio         : num  15.5 18.2 15.2 25.4 24.8 ...
-    ##  $ uso.biblio              : num  2 3 1 7 5 11 6 1 7 1 ...
-    ##  $ prom.uso.platf          : num  38.5 42.8 35.5 58.5 63.2 ...
-    ##  $ uso.platf               : num  2 3 1 7 5 11 6 1 7 1 ...
-    ##  $ prom.apartado.libros    : num  1.25 1.33 1.08 1.92 1.92 ...
-    ##  $ cambio.carrera          : Factor w/ 2 levels "0","1": 1 1 1 1 1 1 1 1 1 1 ...
-
-``` r
-summary(alumnos.training)
-```
-
-    ##  genero  admision.letras admision.numeros promedio.preparatoria  edad.ingreso
-    ##  1:244   Min.   :46.78   Min.   : 8.562   Min.   : 60.00        17     :114  
-    ##  2:369   1st Qu.:56.55   1st Qu.:28.093   1st Qu.: 60.00        18     :110  
-    ##          Median :60.12   Median :35.244   Median : 70.37        19     : 96  
-    ##          Mean   :60.10   Mean   :35.203   Mean   : 72.36        16     : 87  
-    ##          3rd Qu.:63.78   3rd Qu.:42.558   3rd Qu.: 81.34        20     : 71  
-    ##          Max.   :77.71   Max.   :70.411   Max.   :100.00        15     : 64  
-    ##                                                                 (Other): 71  
-    ##  evalucion.socioeconomica nota.conducta   beca     Asist.Total    
-    ##  1: 37                    Min.   :10.00   0:522   Min.   :0.7161  
-    ##  2: 54                    1st Qu.:14.00   1: 91   1st Qu.:0.8633  
-    ##  3: 94                    Median :16.00           Median :0.9115  
-    ##  4:428                    Mean   :15.55           Mean   :0.8967  
-    ##                           3rd Qu.:17.00           3rd Qu.:0.9375  
-    ##                           Max.   :20.00           Max.   :0.9479  
-    ##                                                                   
-    ##    prom.trab       prom.exam       prom.pagos    prom.uso.biblio
-    ##  Min.   :11.55   Min.   :11.54   Min.   :0.000   Min.   :11.58  
-    ##  1st Qu.:12.62   1st Qu.:12.60   1st Qu.:0.000   1st Qu.:16.75  
-    ##  Median :13.35   Median :13.34   Median :1.875   Median :21.00  
-    ##  Mean   :13.48   Mean   :13.45   Mean   :1.391   Mean   :21.77  
-    ##  3rd Qu.:14.18   3rd Qu.:14.14   3rd Qu.:2.000   3rd Qu.:25.67  
-    ##  Max.   :16.22   Max.   :16.23   Max.   :2.000   Max.   :37.58  
-    ##                                                                 
-    ##    uso.biblio     prom.uso.platf    uso.platf      prom.apartado.libros
-    ##  Min.   : 0.000   Min.   :28.17   Min.   : 0.000   Min.   :0.8333      
-    ##  1st Qu.: 2.000   1st Qu.:39.08   1st Qu.: 2.000   1st Qu.:1.2500      
-    ##  Median : 5.000   Median :48.92   Median : 5.000   Median :1.5000      
-    ##  Mean   : 5.109   Mean   :51.16   Mean   : 5.109   Mean   :1.5903      
-    ##  3rd Qu.: 8.000   3rd Qu.:60.25   3rd Qu.: 8.000   3rd Qu.:1.9167      
-    ##  Max.   :12.000   Max.   :92.42   Max.   :12.000   Max.   :2.7500      
-    ##                                                                        
-    ##  cambio.carrera
-    ##  0:549         
-    ##  1: 64         
-    ##                
-    ##                
-    ##                
-    ##                
-    ## 
-
-``` r
-alumnos.training$genero <- as.numeric(alumnos.training$genero)
-alumnos.training$edad.ingreso <- as.numeric(alumnos.training$edad.ingreso)
-alumnos.training$evalucion.socioeconomica <- as.numeric(alumnos.training$evalucion.socioeconomica)
-alumnos.training$beca <- as.numeric(alumnos.training$beca)
-alumnos.training$cambio.carrera <- as.numeric(alumnos.training$cambio.carrera)
-str(alumnos.training)
-```
-
-    ## 'data.frame':    613 obs. of  18 variables:
-    ##  $ genero                  : num  2 2 2 1 2 2 2 1 2 1 ...
-    ##  $ admision.letras         : num  60.1 59.1 53.1 57 61.9 ...
-    ##  $ admision.numeros        : num  35.2 33.2 21.3 29 38.9 ...
-    ##  $ promedio.preparatoria   : num  70.3 67.2 60 61 75.8 ...
-    ##  $ edad.ingreso            : num  8 7 5 6 8 5 7 4 7 10 ...
-    ##  $ evalucion.socioeconomica: num  4 4 4 4 4 4 4 4 4 4 ...
-    ##  $ nota.conducta           : num  16 15 13 14 16 13 15 12 15 18 ...
-    ##  $ beca                    : num  1 1 1 1 1 1 1 1 1 1 ...
-    ##  $ Asist.Total             : num  0.875 0.857 0.842 0.915 0.876 ...
-    ##  $ prom.trab               : num  12.5 13.1 12.5 14.2 13.5 ...
-    ##  $ prom.exam               : num  12.5 13.1 12.5 14.2 13.4 ...
-    ##  $ prom.pagos              : num  2 0 0 2 0 0 2 2 2 2 ...
-    ##  $ prom.uso.biblio         : num  15.5 18.2 15.2 25.4 24.8 ...
-    ##  $ uso.biblio              : num  2 3 1 7 5 11 6 1 7 1 ...
-    ##  $ prom.uso.platf          : num  38.5 42.8 35.5 58.5 63.2 ...
-    ##  $ uso.platf               : num  2 3 1 7 5 11 6 1 7 1 ...
-    ##  $ prom.apartado.libros    : num  1.25 1.33 1.08 1.92 1.92 ...
-    ##  $ cambio.carrera          : num  1 1 1 1 1 1 1 1 1 1 ...
-
-``` r
-alumnos.test$genero <- as.numeric(alumnos.test$genero)
-alumnos.test$edad.ingreso <- as.numeric(alumnos.test$edad.ingreso)
-alumnos.test$evalucion.socioeconomica <- as.numeric(alumnos.test$evalucion.socioeconomica)
-alumnos.test$beca <- as.numeric(alumnos.test$beca)
-alumnos.test$cambio.carrera <- as.numeric(alumnos.test$cambio.carrera)
-str(alumnos.test)
-```
-
-    ## 'data.frame':    267 obs. of  18 variables:
-    ##  $ genero                  : num  2 2 2 1 2 2 1 2 2 2 ...
-    ##  $ admision.letras         : num  61.5 63.7 55.2 56.6 58.7 ...
-    ##  $ admision.numeros        : num  37.9 42.4 25.5 28.1 32.5 ...
-    ##  $ promedio.preparatoria   : num  74.4 81.1 60 60 66.2 ...
-    ##  $ edad.ingreso            : num  8 9 6 6 7 4 4 6 6 10 ...
-    ##  $ evalucion.socioeconomica: num  4 4 4 3 4 4 1 4 4 4 ...
-    ##  $ nota.conducta           : num  16 17 14 14 15 12 12 14 14 18 ...
-    ##  $ beca                    : num  1 1 1 1 1 1 2 1 1 1 ...
-    ##  $ Asist.Total             : num  0.844 0.884 0.889 0.948 0.928 ...
-    ##  $ prom.trab               : num  12.4 14.1 11.9 14.7 12.8 ...
-    ##  $ prom.exam               : num  12.4 14.1 11.9 14.7 12.8 ...
-    ##  $ prom.pagos              : num  2 2 1.88 0 2 ...
-    ##  $ prom.uso.biblio         : num  15.8 26.6 13 29.2 16.9 ...
-    ##  $ uso.biblio              : num  2 6 0 10 2 6 3 8 5 6 ...
-    ##  $ prom.uso.platf          : num  36.2 63.8 30.8 68 41 ...
-    ##  $ uso.platf               : num  2 6 0 10 2 6 3 8 5 6 ...
-    ##  $ prom.apartado.libros    : num  1.083 1.833 0.917 2.167 1.25 ...
-    ##  $ cambio.carrera          : num  1 1 1 1 1 1 2 1 1 1 ...
+    ##      genero     admision.letras admision.numeros promedio.preparatoria
+    ##  Min.   :1.00   Min.   :44.94   Min.   : 4.878   Min.   : 60.00       
+    ##  1st Qu.:1.00   1st Qu.:57.09   1st Qu.:29.176   1st Qu.: 61.26       
+    ##  Median :2.00   Median :59.94   Median :34.886   Median : 69.83       
+    ##  Mean   :1.63   Mean   :59.96   Mean   :34.912   Mean   : 72.08       
+    ##  3rd Qu.:2.00   3rd Qu.:63.19   3rd Qu.:41.370   3rd Qu.: 79.56       
+    ##  Max.   :2.00   Max.   :72.00   Max.   :58.992   Max.   :100.00       
+    ##   edad.ingreso   evalucion.socioeconomica nota.conducta        beca     
+    ##  Min.   : 1.00   Min.   :1.00             Min.   : 9.00   Min.   :1.00  
+    ##  1st Qu.: 6.00   1st Qu.:3.00             1st Qu.:14.00   1st Qu.:1.00  
+    ##  Median : 7.00   Median :4.00             Median :15.00   Median :1.00  
+    ##  Mean   : 7.44   Mean   :3.47             Mean   :15.44   Mean   :1.18  
+    ##  3rd Qu.: 9.00   3rd Qu.:4.00             3rd Qu.:17.00   3rd Qu.:1.00  
+    ##  Max.   :12.00   Max.   :4.00             Max.   :20.00   Max.   :2.00  
+    ##   Asist.Total       prom.trab       prom.exam       prom.pagos   
+    ##  Min.   :0.7578   Min.   :11.87   Min.   :11.83   Min.   :0.000  
+    ##  1st Qu.:0.8779   1st Qu.:12.54   1st Qu.:12.51   1st Qu.:1.875  
+    ##  Median :0.9141   Median :13.27   Median :13.24   Median :2.000  
+    ##  Mean   :0.9005   Mean   :13.46   Mean   :13.43   Mean   :1.584  
+    ##  3rd Qu.:0.9362   3rd Qu.:14.16   3rd Qu.:14.12   3rd Qu.:2.000  
+    ##  Max.   :0.9479   Max.   :16.09   Max.   :16.09   Max.   :2.000  
+    ##    uso.biblio      uso.platf     prom.apartado.libros cambio.carrera
+    ##  Min.   : 0.00   Min.   : 0.00   Min.   :0.9167       Min.   :1.00  
+    ##  1st Qu.: 2.00   1st Qu.: 2.00   1st Qu.:1.1667       1st Qu.:1.00  
+    ##  Median : 5.00   Median : 5.00   Median :1.5000       Median :1.00  
+    ##  Mean   : 5.07   Mean   : 5.07   Mean   :1.5883       Mean   :1.07  
+    ##  3rd Qu.: 8.00   3rd Qu.: 8.00   3rd Qu.:1.9167       3rd Qu.:1.00  
+    ##  Max.   :11.00   Max.   :11.00   Max.   :2.8333       Max.   :2.00
 
 ``` r
 alumnos.actuales$genero <- as.numeric(alumnos.actuales$genero)
@@ -400,7 +292,7 @@ alumnos.actuales$cambio.carrera <- as.numeric(alumnos.actuales$cambio.carrera)
 str(alumnos.actuales)
 ```
 
-    ## 'data.frame':    880 obs. of  18 variables:
+    ## 'data.frame':    900 obs. of  16 variables:
     ##  $ genero                  : num  2 2 2 1 2 2 2 2 1 2 ...
     ##  $ admision.letras         : num  60.1 59.1 53.1 57 61.5 ...
     ##  $ admision.numeros        : num  35.2 33.2 21.3 29 37.9 ...
@@ -413,251 +305,247 @@ str(alumnos.actuales)
     ##  $ prom.trab               : num  12.5 13.1 12.5 14.2 12.4 ...
     ##  $ prom.exam               : num  12.5 13.1 12.5 14.2 12.4 ...
     ##  $ prom.pagos              : num  2 0 0 2 2 0 0 2 2 2 ...
-    ##  $ prom.uso.biblio         : num  15.5 18.2 15.2 25.4 15.8 ...
     ##  $ uso.biblio              : num  2 3 1 7 2 5 11 6 1 7 ...
-    ##  $ prom.uso.platf          : num  38.5 42.8 35.5 58.5 36.2 ...
     ##  $ uso.platf               : num  2 3 1 7 2 5 11 6 1 7 ...
     ##  $ prom.apartado.libros    : num  1.25 1.33 1.08 1.92 1.08 ...
     ##  $ cambio.carrera          : num  1 1 1 1 1 1 1 1 1 1 ...
+
+``` r
+head(alumnos.actuales,5)
+```
+
+    ##   genero admision.letras admision.numeros promedio.preparatoria edad.ingreso
+    ## 1      2        60.09373         35.18746              70.28119            8
+    ## 2      2        59.07874         33.15747              67.23621            7
+    ## 3      2        53.14335         21.28669              60.00000            5
+    ## 4      1        57.00416         29.00832              61.01248            6
+    ## 5      2        61.47273         37.94545              74.41818            8
+    ##   evalucion.socioeconomica nota.conducta beca Asist.Total prom.trab prom.exam
+    ## 1                        4            16    1   0.8750000  12.47364  12.51429
+    ## 2                        4            15    1   0.8567708  13.13827  13.10560
+    ## 3                        4            13    1   0.8424479  12.53885  12.51326
+    ## 4                        4            14    1   0.9153646  14.21924  14.17651
+    ## 5                        4            16    1   0.8437500  12.44557  12.39884
+    ##   prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera
+    ## 1          2          2         2             1.250000              1
+    ## 2          0          3         3             1.333333              1
+    ## 3          0          1         1             1.083333              1
+    ## 4          2          7         7             1.916667              1
+    ## 5          2          2         2             1.083333              1
+
+``` r
+summary(alumnos.actuales)
+```
+
+    ##      genero      admision.letras admision.numeros promedio.preparatoria
+    ##  Min.   :1.000   Min.   :44.99   Min.   : 4.986   Min.   : 60.00       
+    ##  1st Qu.:1.000   1st Qu.:56.60   1st Qu.:28.195   1st Qu.: 60.00       
+    ##  Median :2.000   Median :60.09   Median :35.184   Median : 70.28       
+    ##  Mean   :1.591   Mean   :60.07   Mean   :35.136   Mean   : 72.27       
+    ##  3rd Qu.:2.000   3rd Qu.:63.67   3rd Qu.:42.335   3rd Qu.: 81.00       
+    ##  Max.   :2.000   Max.   :77.71   Max.   :70.411   Max.   :100.00       
+    ##   edad.ingreso    evalucion.socioeconomica nota.conducta        beca      
+    ##  Min.   : 1.000   Min.   :1.000            Min.   : 9.00   Min.   :1.000  
+    ##  1st Qu.: 6.000   1st Qu.:3.000            1st Qu.:14.00   1st Qu.:1.000  
+    ##  Median : 8.000   Median :4.000            Median :16.00   Median :1.000  
+    ##  Mean   : 7.544   Mean   :3.466            Mean   :15.54   Mean   :1.161  
+    ##  3rd Qu.: 9.000   3rd Qu.:4.000            3rd Qu.:17.00   3rd Qu.:1.000  
+    ##  Max.   :15.000   Max.   :4.000            Max.   :20.00   Max.   :2.000  
+    ##   Asist.Total       prom.trab       prom.exam       prom.pagos   
+    ##  Min.   :0.7161   Min.   :11.55   Min.   :11.54   Min.   :0.000  
+    ##  1st Qu.:0.8633   1st Qu.:12.64   1st Qu.:12.60   1st Qu.:0.000  
+    ##  Median :0.9095   Median :13.35   Median :13.33   Median :1.875  
+    ##  Mean   :0.8960   Mean   :13.46   Mean   :13.43   Mean   :1.396  
+    ##  3rd Qu.:0.9362   3rd Qu.:14.15   3rd Qu.:14.12   3rd Qu.:2.000  
+    ##  Max.   :0.9479   Max.   :16.22   Max.   :16.23   Max.   :2.000  
+    ##    uso.biblio       uso.platf      prom.apartado.libros cambio.carrera 
+    ##  Min.   : 0.000   Min.   : 0.000   Min.   :0.8333       Min.   :1.000  
+    ##  1st Qu.: 2.000   1st Qu.: 2.000   1st Qu.:1.2500       1st Qu.:1.000  
+    ##  Median : 5.000   Median : 5.000   Median :1.5000       Median :1.000  
+    ##  Mean   : 5.039   Mean   : 5.039   Mean   :1.5819       Mean   :1.103  
+    ##  3rd Qu.: 8.000   3rd Qu.: 8.000   3rd Qu.:1.9167       3rd Qu.:1.000  
+    ##  Max.   :12.000   Max.   :12.000   Max.   :2.7500       Max.   :2.000
 
 ## Analisis de Correlacion
 
 ``` r
 jpeg('imgs/correlacion-alumnos-ad.jpg', width=1920, height=1080)
-rquery.cormat(alumnos.training, type="full", col=col)
+rquery.cormat(alumnos.actuales, type="full", col=col)
 ```
 
     ## $r
-    ##                            genero evalucion.socioeconomica Asist.Total
-    ## genero                    1.00000                  0.71000      0.0900
-    ## evalucion.socioeconomica  0.71000                  1.00000      0.0360
-    ## Asist.Total               0.09000                  0.03600      1.0000
-    ## uso.biblio                0.05300                  0.00830      0.6500
-    ## uso.platf                 0.05300                  0.00830      0.6500
-    ## prom.trab                 0.00820                 -0.01000      0.5100
-    ## prom.exam                 0.00820                 -0.00960      0.5100
-    ## prom.apartado.libros      0.00083                 -0.01500      0.5500
-    ## prom.uso.biblio           0.00850                 -0.01100      0.5400
-    ## prom.uso.platf           -0.00550                 -0.02000      0.5100
-    ## beca                     -0.51000                 -0.89000     -0.0470
-    ## cambio.carrera           -0.42000                 -0.80000     -0.0140
-    ## prom.pagos                0.04900                  0.07500     -0.1400
-    ## promedio.preparatoria    -0.04900                  0.00770     -0.0030
-    ## admision.letras          -0.03000                  0.00021     -0.0056
-    ## admision.numeros         -0.03000                  0.00021     -0.0056
-    ## edad.ingreso             -0.04000                 -0.00530     -0.0063
-    ## nota.conducta            -0.04600                 -0.00870     -0.0087
-    ##                          uso.biblio uso.platf prom.trab prom.exam
-    ## genero                       0.0530    0.0530    0.0082    0.0082
-    ## evalucion.socioeconomica     0.0083    0.0083   -0.0100   -0.0096
-    ## Asist.Total                  0.6500    0.6500    0.5100    0.5100
-    ## uso.biblio                   1.0000    1.0000    0.9100    0.9100
-    ## uso.platf                    1.0000    1.0000    0.9100    0.9100
-    ## prom.trab                    0.9100    0.9100    1.0000    1.0000
-    ## prom.exam                    0.9100    0.9100    1.0000    1.0000
-    ## prom.apartado.libros         0.9300    0.9300    0.9700    0.9700
-    ## prom.uso.biblio              0.9300    0.9300    0.9600    0.9600
-    ## prom.uso.platf               0.8900    0.8900    0.9400    0.9400
-    ## beca                        -0.0350   -0.0350   -0.0270   -0.0260
-    ## cambio.carrera              -0.0084   -0.0084   -0.0093   -0.0088
-    ## prom.pagos                  -0.3100   -0.3100   -0.2500   -0.2600
-    ## promedio.preparatoria       -0.0091   -0.0091    0.0022    0.0021
-    ## admision.letras             -0.0028   -0.0028    0.0087    0.0083
-    ## admision.numeros            -0.0028   -0.0028    0.0087    0.0083
-    ## edad.ingreso                -0.0047   -0.0047    0.0120    0.0120
-    ## nota.conducta               -0.0088   -0.0088    0.0097    0.0093
-    ##                          prom.apartado.libros prom.uso.biblio prom.uso.platf
-    ## genero                                0.00083         0.00850       -0.00550
-    ## evalucion.socioeconomica             -0.01500        -0.01100       -0.02000
-    ## Asist.Total                           0.55000         0.54000        0.51000
-    ## uso.biblio                            0.93000         0.93000        0.89000
-    ## uso.platf                             0.93000         0.93000        0.89000
-    ## prom.trab                             0.97000         0.96000        0.94000
-    ## prom.exam                             0.97000         0.96000        0.94000
-    ## prom.apartado.libros                  1.00000         0.99000        0.98000
-    ## prom.uso.biblio                       0.99000         1.00000        0.99000
-    ## prom.uso.platf                        0.98000         0.99000        1.00000
-    ## beca                                 -0.02200        -0.02200       -0.01200
-    ## cambio.carrera                       -0.00033        -0.00580        0.00180
-    ## prom.pagos                           -0.30000        -0.34000       -0.33000
-    ## promedio.preparatoria                -0.00500        -0.00420       -0.00340
-    ## admision.letras                       0.00014         0.00034        0.00030
-    ## admision.numeros                      0.00014         0.00034        0.00030
-    ## edad.ingreso                          0.00069         0.00062        0.00034
-    ## nota.conducta                        -0.00140        -0.00230       -0.00200
-    ##                             beca cambio.carrera prom.pagos
-    ## genero                   -0.5100       -0.42000      0.049
-    ## evalucion.socioeconomica -0.8900       -0.80000      0.075
-    ## Asist.Total              -0.0470       -0.01400     -0.140
-    ## uso.biblio               -0.0350       -0.00840     -0.310
-    ## uso.platf                -0.0350       -0.00840     -0.310
-    ## prom.trab                -0.0270       -0.00930     -0.250
-    ## prom.exam                -0.0260       -0.00880     -0.260
-    ## prom.apartado.libros     -0.0220       -0.00033     -0.300
-    ## prom.uso.biblio          -0.0220       -0.00580     -0.340
-    ## prom.uso.platf           -0.0120        0.00180     -0.330
-    ## beca                      1.0000        0.82000     -0.064
-    ## cambio.carrera            0.8200        1.00000     -0.038
-    ## prom.pagos               -0.0640       -0.03800      1.000
-    ## promedio.preparatoria    -0.0280       -0.02100      0.063
-    ## admision.letras          -0.0082       -0.00430      0.081
-    ## admision.numeros         -0.0082       -0.00430      0.081
-    ## edad.ingreso             -0.0066       -0.00480      0.086
-    ## nota.conducta            -0.0043       -0.00290      0.086
+    ##                           genero evalucion.socioeconomica Asist.Total
+    ## genero                    1.0000                   0.7200      0.0690
+    ## evalucion.socioeconomica  0.7200                   1.0000      0.0390
+    ## Asist.Total               0.0690                   0.0390      1.0000
+    ## uso.biblio                0.0470                   0.0015      0.6600
+    ## uso.platf                 0.0470                   0.0015      0.6600
+    ## prom.apartado.libros      0.0052                  -0.0160      0.5700
+    ## prom.trab                -0.0017                  -0.0230      0.5200
+    ## prom.exam                -0.0012                  -0.0230      0.5300
+    ## beca                     -0.5300                  -0.8900     -0.0340
+    ## cambio.carrera           -0.4100                  -0.7700     -0.0042
+    ## prom.pagos                0.0120                   0.0350     -0.1300
+    ## promedio.preparatoria    -0.0420                  -0.0013      0.0230
+    ## admision.letras          -0.0330                  -0.0073      0.0180
+    ## admision.numeros         -0.0330                  -0.0073      0.0180
+    ## edad.ingreso             -0.0400                  -0.0110      0.0120
+    ## nota.conducta            -0.0440                  -0.0130      0.0100
+    ##                          uso.biblio uso.platf prom.apartado.libros prom.trab
+    ## genero                      0.04700   0.04700               0.0052  -0.00170
+    ## evalucion.socioeconomica    0.00150   0.00150              -0.0160  -0.02300
+    ## Asist.Total                 0.66000   0.66000               0.5700   0.52000
+    ## uso.biblio                  1.00000   1.00000               0.9300   0.91000
+    ## uso.platf                   1.00000   1.00000               0.9300   0.91000
+    ## prom.apartado.libros        0.93000   0.93000               1.0000   0.97000
+    ## prom.trab                   0.91000   0.91000               0.9700   1.00000
+    ## prom.exam                   0.91000   0.91000               0.9700   1.00000
+    ## beca                       -0.00550  -0.00550               0.0055   0.01200
+    ## cambio.carrera              0.00860   0.00860               0.0120   0.01400
+    ## prom.pagos                 -0.30000  -0.30000              -0.3000  -0.25000
+    ## promedio.preparatoria       0.00094   0.00094              -0.0048   0.00280
+    ## admision.letras             0.00042   0.00042              -0.0070   0.00220
+    ## admision.numeros            0.00042   0.00042              -0.0070   0.00220
+    ## edad.ingreso               -0.00480  -0.00480              -0.0095   0.00220
+    ## nota.conducta              -0.00840  -0.00840              -0.0120  -0.00039
+    ##                          prom.exam    beca cambio.carrera prom.pagos
+    ## genero                    -0.00120 -0.5300        -0.4100     0.0120
+    ## evalucion.socioeconomica  -0.02300 -0.8900        -0.7700     0.0350
+    ## Asist.Total                0.53000 -0.0340        -0.0042    -0.1300
+    ## uso.biblio                 0.91000 -0.0055         0.0086    -0.3000
+    ## uso.platf                  0.91000 -0.0055         0.0086    -0.3000
+    ## prom.apartado.libros       0.97000  0.0055         0.0120    -0.3000
+    ## prom.trab                  1.00000  0.0120         0.0140    -0.2500
+    ## prom.exam                  1.00000  0.0120         0.0140    -0.2500
+    ## beca                       0.01200  1.0000         0.7700    -0.0270
+    ## cambio.carrera             0.01400  0.7700         1.0000    -0.0086
+    ## prom.pagos                -0.25000 -0.0270        -0.0086     1.0000
+    ## promedio.preparatoria      0.00300 -0.0081        -0.0190     0.0300
+    ## admision.letras            0.00200  0.0090        -0.0082     0.0480
+    ## admision.numeros           0.00200  0.0090        -0.0082     0.0480
+    ## edad.ingreso               0.00180  0.0110        -0.0100     0.0560
+    ## nota.conducta             -0.00068  0.0130        -0.0088     0.0550
     ##                          promedio.preparatoria admision.letras admision.numeros
-    ## genero                                 -0.0490        -0.03000         -0.03000
-    ## evalucion.socioeconomica                0.0077         0.00021          0.00021
-    ## Asist.Total                            -0.0030        -0.00560         -0.00560
-    ## uso.biblio                             -0.0091        -0.00280         -0.00280
-    ## uso.platf                              -0.0091        -0.00280         -0.00280
-    ## prom.trab                               0.0022         0.00870          0.00870
-    ## prom.exam                               0.0021         0.00830          0.00830
-    ## prom.apartado.libros                   -0.0050         0.00014          0.00014
-    ## prom.uso.biblio                        -0.0042         0.00034          0.00034
-    ## prom.uso.platf                         -0.0034         0.00030          0.00030
-    ## beca                                   -0.0280        -0.00820         -0.00820
-    ## cambio.carrera                         -0.0210        -0.00430         -0.00430
-    ## prom.pagos                              0.0630         0.08100          0.08100
-    ## promedio.preparatoria                   1.0000         0.95000          0.95000
-    ## admision.letras                         0.9500         1.00000          1.00000
-    ## admision.numeros                        0.9500         1.00000          1.00000
-    ## edad.ingreso                            0.9500         0.99000          0.99000
-    ## nota.conducta                           0.9500         0.99000          0.99000
+    ## genero                                -0.04200        -0.03300         -0.03300
+    ## evalucion.socioeconomica              -0.00130        -0.00730         -0.00730
+    ## Asist.Total                            0.02300         0.01800          0.01800
+    ## uso.biblio                             0.00094         0.00042          0.00042
+    ## uso.platf                              0.00094         0.00042          0.00042
+    ## prom.apartado.libros                  -0.00480        -0.00700         -0.00700
+    ## prom.trab                              0.00280         0.00220          0.00220
+    ## prom.exam                              0.00300         0.00200          0.00200
+    ## beca                                  -0.00810         0.00900          0.00900
+    ## cambio.carrera                        -0.01900        -0.00820         -0.00820
+    ## prom.pagos                             0.03000         0.04800          0.04800
+    ## promedio.preparatoria                  1.00000         0.95000          0.95000
+    ## admision.letras                        0.95000         1.00000          1.00000
+    ## admision.numeros                       0.95000         1.00000          1.00000
+    ## edad.ingreso                           0.94000         0.99000          0.99000
+    ## nota.conducta                          0.94000         0.99000          0.99000
     ##                          edad.ingreso nota.conducta
-    ## genero                       -0.04000       -0.0460
-    ## evalucion.socioeconomica     -0.00530       -0.0087
-    ## Asist.Total                  -0.00630       -0.0087
-    ## uso.biblio                   -0.00470       -0.0088
-    ## uso.platf                    -0.00470       -0.0088
-    ## prom.trab                     0.01200        0.0097
-    ## prom.exam                     0.01200        0.0093
-    ## prom.apartado.libros          0.00069       -0.0014
-    ## prom.uso.biblio               0.00062       -0.0023
-    ## prom.uso.platf                0.00034       -0.0020
-    ## beca                         -0.00660       -0.0043
-    ## cambio.carrera               -0.00480       -0.0029
-    ## prom.pagos                    0.08600        0.0860
-    ## promedio.preparatoria         0.95000        0.9500
-    ## admision.letras               0.99000        0.9900
-    ## admision.numeros              0.99000        0.9900
-    ## edad.ingreso                  1.00000        1.0000
-    ## nota.conducta                 1.00000        1.0000
+    ## genero                        -0.0400      -0.04400
+    ## evalucion.socioeconomica      -0.0110      -0.01300
+    ## Asist.Total                    0.0120       0.01000
+    ## uso.biblio                    -0.0048      -0.00840
+    ## uso.platf                     -0.0048      -0.00840
+    ## prom.apartado.libros          -0.0095      -0.01200
+    ## prom.trab                      0.0022      -0.00039
+    ## prom.exam                      0.0018      -0.00068
+    ## beca                           0.0110       0.01300
+    ## cambio.carrera                -0.0100      -0.00880
+    ## prom.pagos                     0.0560       0.05500
+    ## promedio.preparatoria          0.9400       0.94000
+    ## admision.letras                0.9900       0.99000
+    ## admision.numeros               0.9900       0.99000
+    ## edad.ingreso                   1.0000       1.00000
+    ## nota.conducta                  1.0000       1.00000
     ## 
     ## $p
-    ##                           genero evalucion.socioeconomica Asist.Total
-    ## genero                   0.0e+00                  4.3e-94     2.7e-02
-    ## evalucion.socioeconomica 4.3e-94                  0.0e+00     3.7e-01
-    ## Asist.Total              2.7e-02                  3.7e-01     0.0e+00
-    ## uso.biblio               1.9e-01                  8.4e-01     2.3e-74
-    ## uso.platf                1.9e-01                  8.4e-01     2.3e-74
-    ## prom.trab                8.4e-01                  8.0e-01     3.1e-41
-    ## prom.exam                8.4e-01                  8.1e-01     2.7e-41
-    ## prom.apartado.libros     9.8e-01                  7.0e-01     9.8e-50
-    ## prom.uso.biblio          8.3e-01                  8.0e-01     3.4e-47
-    ## prom.uso.platf           8.9e-01                  6.3e-01     5.2e-41
-    ## beca                     1.6e-42                 1.9e-212     2.5e-01
-    ## cambio.carrera           1.4e-27                 7.9e-135     7.3e-01
-    ## prom.pagos               2.2e-01                  6.4e-02     5.7e-04
-    ## promedio.preparatoria    2.2e-01                  8.5e-01     9.4e-01
-    ## admision.letras          4.6e-01                  1.0e+00     8.9e-01
-    ## admision.numeros         4.6e-01                  1.0e+00     8.9e-01
-    ## edad.ingreso             3.2e-01                  9.0e-01     8.8e-01
-    ## nota.conducta            2.6e-01                  8.3e-01     8.3e-01
-    ##                          uso.biblio uso.platf prom.trab prom.exam
-    ## genero                      1.9e-01   1.9e-01   8.4e-01   8.4e-01
-    ## evalucion.socioeconomica    8.4e-01   8.4e-01   8.0e-01   8.1e-01
-    ## Asist.Total                 2.3e-74   2.3e-74   3.1e-41   2.7e-41
-    ## uso.biblio                  0.0e+00   0.0e+00  1.2e-236  1.6e-237
-    ## uso.platf                   0.0e+00   0.0e+00  1.2e-236  1.6e-237
-    ## prom.trab                  1.2e-236  1.2e-236   0.0e+00   0.0e+00
-    ## prom.exam                  1.6e-237  1.6e-237   0.0e+00   0.0e+00
-    ## prom.apartado.libros       4.6e-273  4.6e-273   0.0e+00   0.0e+00
-    ## prom.uso.biblio            6.9e-264  6.9e-264   0.0e+00   0.0e+00
-    ## prom.uso.platf             2.1e-205  2.1e-205  9.7e-284  2.4e-284
-    ## beca                        3.9e-01   3.9e-01   5.1e-01   5.2e-01
-    ## cambio.carrera              8.3e-01   8.3e-01   8.2e-01   8.3e-01
-    ## prom.pagos                  9.6e-15   9.6e-15   2.6e-10   1.1e-10
-    ## promedio.preparatoria       8.2e-01   8.2e-01   9.6e-01   9.6e-01
-    ## admision.letras             9.5e-01   9.5e-01   8.3e-01   8.4e-01
-    ## admision.numeros            9.5e-01   9.5e-01   8.3e-01   8.4e-01
-    ## edad.ingreso                9.1e-01   9.1e-01   7.6e-01   7.7e-01
-    ## nota.conducta               8.3e-01   8.3e-01   8.1e-01   8.2e-01
-    ##                          prom.apartado.libros prom.uso.biblio prom.uso.platf
-    ## genero                                9.8e-01         8.3e-01        8.9e-01
-    ## evalucion.socioeconomica              7.0e-01         8.0e-01        6.3e-01
-    ## Asist.Total                           9.8e-50         3.4e-47        5.2e-41
-    ## uso.biblio                           4.6e-273        6.9e-264       2.1e-205
-    ## uso.platf                            4.6e-273        6.9e-264       2.1e-205
-    ## prom.trab                             0.0e+00         0.0e+00       9.7e-284
-    ## prom.exam                             0.0e+00         0.0e+00       2.4e-284
-    ## prom.apartado.libros                  0.0e+00         0.0e+00        0.0e+00
-    ## prom.uso.biblio                       0.0e+00         0.0e+00        0.0e+00
-    ## prom.uso.platf                        0.0e+00         0.0e+00        0.0e+00
-    ## beca                                  6.0e-01         5.9e-01        7.6e-01
-    ## cambio.carrera                        9.9e-01         8.9e-01        9.7e-01
-    ## prom.pagos                            1.7e-14         1.5e-17        1.9e-17
-    ## promedio.preparatoria                 9.0e-01         9.2e-01        9.3e-01
-    ## admision.letras                       1.0e+00         9.9e-01        9.9e-01
-    ## admision.numeros                      1.0e+00         9.9e-01        9.9e-01
-    ## edad.ingreso                          9.9e-01         9.9e-01        9.9e-01
-    ## nota.conducta                         9.7e-01         9.6e-01        9.6e-01
-    ##                              beca cambio.carrera prom.pagos
-    ## genero                    1.6e-42        1.4e-27    2.2e-01
-    ## evalucion.socioeconomica 1.9e-212       7.9e-135    6.4e-02
-    ## Asist.Total               2.5e-01        7.3e-01    5.7e-04
-    ## uso.biblio                3.9e-01        8.3e-01    9.6e-15
-    ## uso.platf                 3.9e-01        8.3e-01    9.6e-15
-    ## prom.trab                 5.1e-01        8.2e-01    2.6e-10
-    ## prom.exam                 5.2e-01        8.3e-01    1.1e-10
-    ## prom.apartado.libros      6.0e-01        9.9e-01    1.7e-14
-    ## prom.uso.biblio           5.9e-01        8.9e-01    1.5e-17
-    ## prom.uso.platf            7.6e-01        9.7e-01    1.9e-17
-    ## beca                      0.0e+00       1.0e-148    1.1e-01
-    ## cambio.carrera           1.0e-148        0.0e+00    3.4e-01
-    ## prom.pagos                1.1e-01        3.4e-01    0.0e+00
-    ## promedio.preparatoria     4.8e-01        6.0e-01    1.2e-01
-    ## admision.letras           8.4e-01        9.2e-01    4.4e-02
-    ## admision.numeros          8.4e-01        9.2e-01    4.4e-02
-    ## edad.ingreso              8.7e-01        9.1e-01    3.2e-02
-    ## nota.conducta             9.1e-01        9.4e-01    3.3e-02
+    ##                            genero evalucion.socioeconomica Asist.Total
+    ## genero                    0.0e+00                 2.5e-144     3.8e-02
+    ## evalucion.socioeconomica 2.5e-144                  0.0e+00     2.4e-01
+    ## Asist.Total               3.8e-02                  2.4e-01     0.0e+00
+    ## uso.biblio                1.6e-01                  9.6e-01    2.4e-114
+    ## uso.platf                 1.6e-01                  9.6e-01    2.4e-114
+    ## prom.apartado.libros      8.8e-01                  6.4e-01     9.3e-79
+    ## prom.trab                 9.6e-01                  4.8e-01     1.0e-64
+    ## prom.exam                 9.7e-01                  5.0e-01     6.4e-65
+    ## beca                      1.9e-65                 2.3e-311     3.0e-01
+    ## cambio.carrera            1.9e-37                 3.9e-174     9.0e-01
+    ## prom.pagos                7.1e-01                  2.9e-01     5.0e-05
+    ## promedio.preparatoria     2.0e-01                  9.7e-01     4.9e-01
+    ## admision.letras           3.3e-01                  8.3e-01     5.9e-01
+    ## admision.numeros          3.3e-01                  8.3e-01     5.9e-01
+    ## edad.ingreso              2.3e-01                  7.5e-01     7.2e-01
+    ## nota.conducta             1.9e-01                  6.9e-01     7.6e-01
+    ##                          uso.biblio uso.platf prom.apartado.libros prom.trab
+    ## genero                      1.6e-01   1.6e-01              8.8e-01   9.6e-01
+    ## evalucion.socioeconomica    9.6e-01   9.6e-01              6.4e-01   4.8e-01
+    ## Asist.Total                2.4e-114  2.4e-114              9.3e-79   1.0e-64
+    ## uso.biblio                  0.0e+00   0.0e+00              0.0e+00   0.0e+00
+    ## uso.platf                   0.0e+00   0.0e+00              0.0e+00   0.0e+00
+    ## prom.apartado.libros        0.0e+00   0.0e+00              0.0e+00   0.0e+00
+    ## prom.trab                   0.0e+00   0.0e+00              0.0e+00   0.0e+00
+    ## prom.exam                   0.0e+00   0.0e+00              0.0e+00   0.0e+00
+    ## beca                        8.7e-01   8.7e-01              8.7e-01   7.2e-01
+    ## cambio.carrera              8.0e-01   8.0e-01              7.1e-01   6.7e-01
+    ## prom.pagos                  1.5e-20   1.5e-20              9.4e-20   6.7e-14
+    ## promedio.preparatoria       9.8e-01   9.8e-01              8.9e-01   9.3e-01
+    ## admision.letras             9.9e-01   9.9e-01              8.3e-01   9.5e-01
+    ## admision.numeros            9.9e-01   9.9e-01              8.3e-01   9.5e-01
+    ## edad.ingreso                8.9e-01   8.9e-01              7.8e-01   9.5e-01
+    ## nota.conducta               8.0e-01   8.0e-01              7.3e-01   9.9e-01
+    ##                          prom.exam     beca cambio.carrera prom.pagos
+    ## genero                     9.7e-01  1.9e-65        1.9e-37    7.1e-01
+    ## evalucion.socioeconomica   5.0e-01 2.3e-311       3.9e-174    2.9e-01
+    ## Asist.Total                6.4e-65  3.0e-01        9.0e-01    5.0e-05
+    ## uso.biblio                 0.0e+00  8.7e-01        8.0e-01    1.5e-20
+    ## uso.platf                  0.0e+00  8.7e-01        8.0e-01    1.5e-20
+    ## prom.apartado.libros       0.0e+00  8.7e-01        7.1e-01    9.4e-20
+    ## prom.trab                  0.0e+00  7.2e-01        6.7e-01    6.7e-14
+    ## prom.exam                  0.0e+00  7.2e-01        6.6e-01    2.1e-14
+    ## beca                       7.2e-01  0.0e+00       6.9e-181    4.1e-01
+    ## cambio.carrera             6.6e-01 6.9e-181        0.0e+00    8.0e-01
+    ## prom.pagos                 2.1e-14  4.1e-01        8.0e-01    0.0e+00
+    ## promedio.preparatoria      9.3e-01  8.1e-01        5.8e-01    3.6e-01
+    ## admision.letras            9.5e-01  7.9e-01        8.1e-01    1.5e-01
+    ## admision.numeros           9.5e-01  7.9e-01        8.1e-01    1.5e-01
+    ## edad.ingreso               9.6e-01  7.5e-01        7.6e-01    9.2e-02
+    ## nota.conducta              9.8e-01  7.0e-01        7.9e-01    9.7e-02
     ##                          promedio.preparatoria admision.letras admision.numeros
-    ## genero                                 2.2e-01         4.6e-01          4.6e-01
-    ## evalucion.socioeconomica               8.5e-01         1.0e+00          1.0e+00
-    ## Asist.Total                            9.4e-01         8.9e-01          8.9e-01
-    ## uso.biblio                             8.2e-01         9.5e-01          9.5e-01
-    ## uso.platf                              8.2e-01         9.5e-01          9.5e-01
-    ## prom.trab                              9.6e-01         8.3e-01          8.3e-01
-    ## prom.exam                              9.6e-01         8.4e-01          8.4e-01
-    ## prom.apartado.libros                   9.0e-01         1.0e+00          1.0e+00
-    ## prom.uso.biblio                        9.2e-01         9.9e-01          9.9e-01
-    ## prom.uso.platf                         9.3e-01         9.9e-01          9.9e-01
-    ## beca                                   4.8e-01         8.4e-01          8.4e-01
-    ## cambio.carrera                         6.0e-01         9.2e-01          9.2e-01
-    ## prom.pagos                             1.2e-01         4.4e-02          4.4e-02
-    ## promedio.preparatoria                  0.0e+00        8.0e-318         8.0e-318
-    ## admision.letras                       8.0e-318         0.0e+00          0.0e+00
-    ## admision.numeros                      8.0e-318         0.0e+00          0.0e+00
-    ## edad.ingreso                          7.6e-302         0.0e+00          0.0e+00
-    ## nota.conducta                         1.4e-304         0.0e+00          0.0e+00
+    ## genero                                    0.20            0.33             0.33
+    ## evalucion.socioeconomica                  0.97            0.83             0.83
+    ## Asist.Total                               0.49            0.59             0.59
+    ## uso.biblio                                0.98            0.99             0.99
+    ## uso.platf                                 0.98            0.99             0.99
+    ## prom.apartado.libros                      0.89            0.83             0.83
+    ## prom.trab                                 0.93            0.95             0.95
+    ## prom.exam                                 0.93            0.95             0.95
+    ## beca                                      0.81            0.79             0.79
+    ## cambio.carrera                            0.58            0.81             0.81
+    ## prom.pagos                                0.36            0.15             0.15
+    ## promedio.preparatoria                     0.00            0.00             0.00
+    ## admision.letras                           0.00            0.00             0.00
+    ## admision.numeros                          0.00            0.00             0.00
+    ## edad.ingreso                              0.00            0.00             0.00
+    ## nota.conducta                             0.00            0.00             0.00
     ##                          edad.ingreso nota.conducta
-    ## genero                        3.2e-01       2.6e-01
-    ## evalucion.socioeconomica      9.0e-01       8.3e-01
-    ## Asist.Total                   8.8e-01       8.3e-01
-    ## uso.biblio                    9.1e-01       8.3e-01
-    ## uso.platf                     9.1e-01       8.3e-01
-    ## prom.trab                     7.6e-01       8.1e-01
-    ## prom.exam                     7.7e-01       8.2e-01
-    ## prom.apartado.libros          9.9e-01       9.7e-01
-    ## prom.uso.biblio               9.9e-01       9.6e-01
-    ## prom.uso.platf                9.9e-01       9.6e-01
-    ## beca                          8.7e-01       9.1e-01
-    ## cambio.carrera                9.1e-01       9.4e-01
-    ## prom.pagos                    3.2e-02       3.3e-02
-    ## promedio.preparatoria        7.6e-302      1.4e-304
-    ## admision.letras               0.0e+00       0.0e+00
-    ## admision.numeros              0.0e+00       0.0e+00
-    ## edad.ingreso                  0.0e+00       0.0e+00
-    ## nota.conducta                 0.0e+00       0.0e+00
+    ## genero                          0.230         0.190
+    ## evalucion.socioeconomica        0.750         0.690
+    ## Asist.Total                     0.720         0.760
+    ## uso.biblio                      0.890         0.800
+    ## uso.platf                       0.890         0.800
+    ## prom.apartado.libros            0.780         0.730
+    ## prom.trab                       0.950         0.990
+    ## prom.exam                       0.960         0.980
+    ## beca                            0.750         0.700
+    ## cambio.carrera                  0.760         0.790
+    ## prom.pagos                      0.092         0.097
+    ## promedio.preparatoria           0.000         0.000
+    ## admision.letras                 0.000         0.000
+    ## admision.numeros                0.000         0.000
+    ## edad.ingreso                    0.000         0.000
+    ## nota.conducta                   0.000         0.000
     ## 
     ## $sym
     ##                          genero evalucion.socioeconomica Asist.Total uso.biblio
@@ -666,95 +554,85 @@ rquery.cormat(alumnos.training, type="full", col=col)
     ## Asist.Total                                              1                     
     ## uso.biblio                                               ,           1         
     ## uso.platf                                                ,           1         
+    ## prom.apartado.libros                                     .           *         
     ## prom.trab                                                .           *         
     ## prom.exam                                                .           *         
-    ## prom.apartado.libros                                     .           *         
-    ## prom.uso.biblio                                          .           *         
-    ## prom.uso.platf                                           .           +         
     ## beca                     .      +                                              
     ## cambio.carrera           .      ,                                              
-    ## prom.pagos                                                           .         
+    ## prom.pagos                                                                     
     ## promedio.preparatoria                                                          
     ## admision.letras                                                                
     ## admision.numeros                                                               
     ## edad.ingreso                                                                   
     ## nota.conducta                                                                  
-    ##                          uso.platf prom.trab prom.exam prom.apartado.libros
+    ##                          uso.platf prom.apartado.libros prom.trab prom.exam
     ## genero                                                                     
     ## evalucion.socioeconomica                                                   
     ## Asist.Total                                                                
     ## uso.biblio                                                                 
     ## uso.platf                1                                                 
-    ## prom.trab                *         1                                       
-    ## prom.exam                *         1         1                             
-    ## prom.apartado.libros     *         B         B         1                   
-    ## prom.uso.biblio          *         B         B         B                   
-    ## prom.uso.platf           +         *         *         B                   
+    ## prom.apartado.libros     *         1                                       
+    ## prom.trab                *         B                    1                  
+    ## prom.exam                *         B                    1         1        
     ## beca                                                                       
     ## cambio.carrera                                                             
-    ## prom.pagos               .                                                 
+    ## prom.pagos                                                                 
     ## promedio.preparatoria                                                      
     ## admision.letras                                                            
     ## admision.numeros                                                           
     ## edad.ingreso                                                               
     ## nota.conducta                                                              
-    ##                          prom.uso.biblio prom.uso.platf beca cambio.carrera
-    ## genero                                                                     
-    ## evalucion.socioeconomica                                                   
-    ## Asist.Total                                                                
-    ## uso.biblio                                                                 
-    ## uso.platf                                                                  
-    ## prom.trab                                                                  
-    ## prom.exam                                                                  
-    ## prom.apartado.libros                                                       
-    ## prom.uso.biblio          1                                                 
-    ## prom.uso.platf           B               1                                 
-    ## beca                                                    1                  
-    ## cambio.carrera                                          +    1             
-    ## prom.pagos               .               .                                 
-    ## promedio.preparatoria                                                      
-    ## admision.letras                                                            
-    ## admision.numeros                                                           
-    ## edad.ingreso                                                               
-    ## nota.conducta                                                              
-    ##                          prom.pagos promedio.preparatoria admision.letras
-    ## genero                                                                   
-    ## evalucion.socioeconomica                                                 
-    ## Asist.Total                                                              
-    ## uso.biblio                                                               
-    ## uso.platf                                                                
-    ## prom.trab                                                                
-    ## prom.exam                                                                
-    ## prom.apartado.libros                                                     
-    ## prom.uso.biblio                                                          
-    ## prom.uso.platf                                                           
-    ## beca                                                                     
-    ## cambio.carrera                                                           
-    ## prom.pagos               1                                               
-    ## promedio.preparatoria               1                                    
-    ## admision.letras                     *                     1              
-    ## admision.numeros                    *                     1              
-    ## edad.ingreso                        *                     B              
-    ## nota.conducta                       *                     B              
-    ##                          admision.numeros edad.ingreso nota.conducta
-    ## genero                                                              
-    ## evalucion.socioeconomica                                            
-    ## Asist.Total                                                         
-    ## uso.biblio                                                          
-    ## uso.platf                                                           
-    ## prom.trab                                                           
-    ## prom.exam                                                           
-    ## prom.apartado.libros                                                
-    ## prom.uso.biblio                                                     
-    ## prom.uso.platf                                                      
-    ## beca                                                                
-    ## cambio.carrera                                                      
-    ## prom.pagos                                                          
-    ## promedio.preparatoria                                               
-    ## admision.letras                                                     
-    ## admision.numeros         1                                          
-    ## edad.ingreso             B                1                         
-    ## nota.conducta            B                1            1            
+    ##                          beca cambio.carrera prom.pagos promedio.preparatoria
+    ## genero                                                                       
+    ## evalucion.socioeconomica                                                     
+    ## Asist.Total                                                                  
+    ## uso.biblio                                                                   
+    ## uso.platf                                                                    
+    ## prom.apartado.libros                                                         
+    ## prom.trab                                                                    
+    ## prom.exam                                                                    
+    ## beca                     1                                                   
+    ## cambio.carrera           ,    1                                              
+    ## prom.pagos                                   1                               
+    ## promedio.preparatoria                                   1                    
+    ## admision.letras                                         *                    
+    ## admision.numeros                                        *                    
+    ## edad.ingreso                                            *                    
+    ## nota.conducta                                           *                    
+    ##                          admision.letras admision.numeros edad.ingreso
+    ## genero                                                                
+    ## evalucion.socioeconomica                                              
+    ## Asist.Total                                                           
+    ## uso.biblio                                                            
+    ## uso.platf                                                             
+    ## prom.apartado.libros                                                  
+    ## prom.trab                                                             
+    ## prom.exam                                                             
+    ## beca                                                                  
+    ## cambio.carrera                                                        
+    ## prom.pagos                                                            
+    ## promedio.preparatoria                                                 
+    ## admision.letras          1                                            
+    ## admision.numeros         1               1                            
+    ## edad.ingreso             B               B                1           
+    ## nota.conducta            B               B                1           
+    ##                          nota.conducta
+    ## genero                                
+    ## evalucion.socioeconomica              
+    ## Asist.Total                           
+    ## uso.biblio                            
+    ## uso.platf                             
+    ## prom.apartado.libros                  
+    ## prom.trab                             
+    ## prom.exam                             
+    ## beca                                  
+    ## cambio.carrera                        
+    ## prom.pagos                            
+    ## promedio.preparatoria                 
+    ## admision.letras                       
+    ## admision.numeros                      
+    ## edad.ingreso                          
+    ## nota.conducta            1            
     ## attr(,"legend")
     ## [1] 0 ' ' 0.3 '.' 0.6 ',' 0.8 '+' 0.9 '*' 0.95 'B' 1
 
@@ -766,20 +644,20 @@ dev.off()
     ##                 2
 
 ``` r
-cormat<-rquery.cormat(alumnos.training, type="full", col=col)
+cormat<-rquery.cormat(alumnos.actuales, type="full", col=col)
 ```
 
-![](figure/imgs/README_figs/README-unnamed-chunk-11-1.png)<!-- -->
+![](figure/imgs/README_figs/README-unnamed-chunk-9-1.png)<!-- -->
 
 correlacion con
 pearson
 
 ``` r
-cor.matrix <- cor(alumnos.training, method = "pearson", use = "complete.obs")
+cor.matrix <- cor(alumnos.actuales, method = "pearson", use = "complete.obs")
 corrplot(cor.matrix)
 ```
 
-![](figure/imgs/README_figs/README-unnamed-chunk-12-1.png)<!-- -->
+![](figure/imgs/README_figs/README-unnamed-chunk-10-1.png)<!-- -->
 
 ## Analisis de hombro,codo,brazo
 
@@ -796,13 +674,17 @@ wss.alumnos
 ``` r
 centroides.alumnos <- 25
 for ( i in 1:centroides.alumnos ) 
-  wss.alumnos[i] <- kmeans(alumnos.training,centers = i,nstart=20)$tot.withinss
+  wss.alumnos[i] <- kmeans(alumnos.actuales,centers = i,nstart=20)$tot.withinss
+```
 
+    ## Warning: did not converge in 10 iterations
+
+``` r
 #plot
 plot(1:centroides.alumnos  , wss.alumnos , type="b", xlab = "Number of Clusters", ylab = "Within groups sum of squares")
 ```
 
-![](figure/imgs/README_figs/README-unnamed-chunk-13-1.png)<!-- -->
+![](figure/imgs/README_figs/README-unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 imgPath.codo <- paste(local.path.imgs,"/Kmeans-codo-alumnos.png",sep = "")
@@ -813,7 +695,7 @@ plot.new()
 rasterImage(img.codo.alumnos,0,0,1,1)
 ```
 
-![](figure/imgs/README_figs/README-unnamed-chunk-14-1.png)<!-- -->
+![](figure/imgs/README_figs/README-unnamed-chunk-12-1.png)<!-- -->
 
 ``` r
 set.seed(12345)
@@ -826,13 +708,13 @@ wss.alumnos
 ``` r
 centroides.alumnos <- 10
 for ( i in 1:centroides.alumnos ) 
-  wss.alumnos[i] <- kmeans(alumnos.training,centers = i,nstart=20)$tot.withinss
+  wss.alumnos[i] <- kmeans(alumnos.actuales,centers = i,nstart=20)$tot.withinss
 
 #plot
 plot(1:centroides.alumnos  , wss.alumnos , type="b", xlab = "Number of Clusters", ylab = "Within groups sum of squares")
 ```
 
-![](figure/imgs/README_figs/README-unnamed-chunk-15-1.png)<!-- -->
+![](figure/imgs/README_figs/README-unnamed-chunk-13-1.png)<!-- -->
 
 ``` r
 imgPath.codo.seleccionado <- paste(local.path.imgs,"/Kmeans-codo-alumnos-seleccionado.png",sep = "")
@@ -843,7 +725,7 @@ plot.new()
 rasterImage(img.codo.sel.alumnos,0,0,1,1)
 ```
 
-![](figure/imgs/README_figs/README-unnamed-chunk-16-1.png)<!-- -->
+![](figure/imgs/README_figs/README-unnamed-chunk-14-1.png)<!-- -->
 
 ## Kmeans - 3 Clusters
 
@@ -851,15 +733,15 @@ rasterImage(img.codo.sel.alumnos,0,0,1,1)
 # Set seed
 set.seed(12345)
 # Create the k-means model: km.out
-km.out <- kmeans(alumnos.training, centers = 3, nstart = 20)
+km.out <- kmeans(alumnos.actuales, centers = 3, nstart = 20)
 
 # Inspect the result
 summary(km.out)
 ```
 
     ##              Length Class  Mode   
-    ## cluster      613    -none- numeric
-    ## centers       54    -none- numeric
+    ## cluster      900    -none- numeric
+    ## centers       48    -none- numeric
     ## totss          1    -none- numeric
     ## withinss       3    -none- numeric
     ## tot.withinss   1    -none- numeric
@@ -883,232 +765,468 @@ attributes(km.out)
 km.out$size
 ```
 
-    ## [1] 175 237 201
+    ## [1] 399 197 304
 
 ``` r
 km.out$centers
 ```
 
     ##     genero admision.letras admision.numeros promedio.preparatoria edad.ingreso
-    ## 1 1.582857        59.30549         33.61098              70.08715     7.245714
-    ## 2 1.624473        56.54376         28.08752              63.71571     6.130802
-    ## 3 1.592040        64.99004         44.98009              84.52283     9.517413
+    ## 1 1.596491        55.57136         26.14272              61.68544     5.759398
+    ## 2 1.532995        66.70237         48.40474              89.46320    10.197970
+    ## 3 1.621711        61.67078         38.34156              75.01234     8.167763
     ##   evalucion.socioeconomica nota.conducta     beca Asist.Total prom.trab
-    ## 1                 3.480000      15.24571 1.137143   0.9264435  14.64532
-    ## 2                 3.485232      14.13080 1.164557   0.8808292  12.89741
-    ## 3                 3.502488      17.48259 1.139303   0.8894395  13.15051
-    ##   prom.exam prom.pagos prom.uso.biblio uso.biblio prom.uso.platf uso.platf
-    ## 1  14.62702  0.9057143        29.18286   8.542857       69.32143  8.542857
-    ## 2  12.87055  1.5648734        18.16842   3.350211       42.43776  3.350211
-    ## 3  13.12361  1.6082090        19.56426   4.194030       45.64635  4.194030
-    ##   prom.apartado.libros cambio.carrera
-    ## 1             2.130000       1.091429
-    ## 2             1.324895       1.122363
-    ## 3             1.433250       1.094527
+    ## 1                 3.458647      13.75940 1.165414   0.8955103  13.47159
+    ## 2                 3.461929      18.15736 1.152284   0.8963687  13.45331
+    ## 3                 3.476974      16.16776 1.161184   0.8964929  13.44474
+    ##   prom.exam prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera
+    ## 1  13.44729   1.378759   5.052632  5.052632             1.589599       1.112782
+    ## 2  13.43161   1.440990   4.944162  4.944162             1.571912       1.106599
+    ## 3  13.41817   1.390214   5.082237  5.082237             1.578399       1.088816
 
 ``` r
 # Print the cluster membership component of the model
 km.out$cluster
 ```
 
-    ##    1    2    3    4    6    7    8    9   10   11   12   13   16   18   19   20 
-    ##    2    2    2    1    1    1    2    2    1    3    3    2    2    1    3    1 
-    ##   21   22   23   24   25   26   29   32   33   34   35   36   37   40   41   44 
-    ##    1    2    1    2    2    2    2    2    3    3    1    1    3    2    3    1 
-    ##   45   46   47   48   49   50   51   52   54   55   57   58   59   60   62   65 
-    ##    1    2    1    1    2    3    1    2    1    3    2    3    2    3    1    3 
-    ##   66   67   68   70   71   72   73   74   76   78   79   80   82   83   84   86 
-    ##    1    1    1    2    3    1    1    1    3    2    2    3    2    3    1    1 
-    ##   87   88   89   91   93   94   96   98   99  100  101  102  103  104  106  107 
-    ##    3    1    2    1    2    1    1    3    1    3    2    3    2    3    3    3 
-    ##  108  109  110  111  112  114  115  118  120  125  126  129  130  139  140  141 
-    ##    2    3    3    2    3    2    3    3    3    1    2    2    1    3    1    1 
-    ##  143  144  145  147  148  150  152  154  155  159  161  162  163  164  166  168 
-    ##    1    3    3    1    2    2    1    2    1    2    3    1    3    2    2    1 
-    ##  169  170  171  173  175  177  178  179  180  181  182  183  184  186  187  189 
-    ##    1    1    2    1    2    3    1    3    3    3    3    2    2    3    2    3 
-    ##  191  194  195  197  198  200  201  202  203  204  205  207  209  211  213  215 
-    ##    1    2    2    2    1    2    3    3    3    3    1    3    1    2    2    3 
-    ##  223  224  225  226  228  230  231  232  234  235  236  238  241  243  246  247 
-    ##    1    1    2    3    3    3    2    1    1    1    3    2    3    3    1    1 
-    ##  248  250  251  252  254  255  256  258  259  261  262  264  265  267  268  269 
-    ##    2    3    3    3    2    2    3    1    2    3    1    1    3    2    2    2 
-    ##  270  272  274  277  278  279  280  281  282  284  285  286  287  289  290  291 
-    ##    1    1    3    1    2    3    3    1    2    3    2    2    1    2    3    2 
-    ##  292  294  296  297  299  301  304  306  309  310  312  313  314  318  319  320 
-    ##    3    3    1    3    2    3    1    1    2    2    3    3    2    2    3    3 
-    ##  321  323  324  326  327  329  331  332  334  335  337  338  342  343  346  350 
-    ##    1    3    2    3    1    2    1    3    1    2    1    1    3    2    3    2 
-    ##  351  352  353  354  357  358  359  361  363  364  365  367  368  369  370  376 
-    ##    1    3    2    3    3    1    1    3    1    2    2    3    1    3    2    3 
-    ##  377  378  379  380  382  384  385  387  388  391  392  394  395  398  402  404 
-    ##    1    2    2    1    2    1    1    2    2    2    2    2    2    3    1    3 
-    ##  406  407  408  409  412  414  418  420  421  423  426  427  428  429  430  431 
-    ##    1    2    2    3    2    3    2    2    3    2    1    2    1    1    3    2 
-    ##  432  433  435  436  437  441  444  446  448  449  450  451  452  455  458  459 
-    ##    3    1    1    2    3    1    2    1    3    2    2    3    2    1    2    3 
-    ##  461  462  463  467  469  470  472  473  475  478  479  481  482  483  484  485 
-    ##    2    3    2    3    3    1    2    3    2    3    1    2    1    3    3    2 
-    ##  486  488  490  491  492  496  500  502  504  505  506  507  514  515  516  517 
-    ##    2    2    1    3    2    2    1    2    2    3    3    3    1    3    3    1 
-    ##  518  519  521  522  523  525  526  527  528  529  530  531  532  534  537  538 
-    ##    3    2    1    1    2    2    3    3    2    2    3    3    1    2    3    2 
-    ##  540  541  542  544  545  546  547  553  554  558  559  560  561  563  564  565 
-    ##    2    1    1    3    3    2    3    2    3    2    1    2    2    3    3    2 
-    ##  566  569  570  574  576  579  580  582  583  584  585  587  590  593  595  596 
-    ##    2    3    3    1    1    2    3    1    2    2    2    2    2    1    3    1 
-    ##  597  598  599  600  601  603  605  606  608  609  610  612  614  620  622  624 
-    ##    3    3    3    3    1    1    3    1    2    3    2    3    1    2    2    2 
-    ##  629  630  631  633  636  638  641  642  643  645  647  648  649  650  651  652 
-    ##    2    2    2    1    2    2    1    2    1    3    2    1    2    2    2    3 
-    ##  653  656  657  658  659  661  663  666  669  670  671  673  674  676  677  678 
-    ##    2    2    2    2    3    1    2    3    2    2    3    1    3    2    3    3 
-    ##  679  681  682  683  684  685  687  688  689  690  692  693  695  696  697  699 
-    ##    3    3    1    1    1    2    3    2    3    2    2    2    3    2    2    3 
-    ##  701  702  704  706  708  709  711  714  715  718  721  722  724  725  727  729 
-    ##    2    2    1    2    2    2    2    2    1    2    2    1    1    2    1    2 
-    ##  732  733  735  737  738  742  743  744  746  747  749  752  753  754  756  757 
-    ##    1    2    2    2    2    2    2    3    3    3    1    3    3    2    2    3 
-    ##  760  762  763  766  769  771  772  773  774  776  778  779  780  783  784  785 
-    ##    1    3    3    1    3    3    2    2    2    1    1    2    3    1    2    1 
-    ##  786  787  788  789  790  792  793  795  796  797  798  799  800  801  805  806 
-    ##    1    2    1    1    2    2    1    2    1    3    2    2    3    2    3    2 
-    ##  807  808  809  811  814  816  817  819  820  821  824  825  826  827  829  833 
-    ##    2    1    3    3    3    1    3    2    1    3    2    1    2    2    2    3 
-    ##  835  836  837  838  839  840  841  842  843  844  847  850  854  856  857  858 
-    ##    3    2    1    1    2    3    1    1    2    1    1    3    2    2    2    3 
-    ##  859  861  862  863  864  867  870  877  878  879  880  881  882  883  885  887 
-    ##    1    2    3    1    1    3    3    1    2    1    2    3    2    1    1    1 
-    ##  888  889  890  893  895  897  898  900  902  904  907  909  911  912  913  914 
-    ##    3    3    3    2    2    2    2    3    3    3    2    2    2    2    1    2 
-    ##  915  916  917  920  921  922  924  925  926  927  929  930  931  933  934  935 
-    ##    2    3    3    2    1    1    1    3    2    3    3    1    3    3    3    2 
-    ##  936  938  939  940  942  943  947  948  950  951  953  954  955  956  957  958 
-    ##    2    3    1    2    3    2    3    2    3    3    1    3    3    1    2    1 
-    ##  960  964  967  968  969  970  972  975  976  977  978  980  983  986  987  992 
-    ##    2    2    1    1    3    3    1    1    2    2    1    1    1    2    3    3 
-    ##  995  996  997  998 1000 
-    ##    1    3    3    3    2
+    ##    1    2    3    4    5    6    7    8    9   10   11   12   13   15   16   17 
+    ##    3    1    1    1    3    3    1    1    1    1    2    3    1    3    3    1 
+    ##   18   19   20   21   22   23   24   25   26   27   28   29   30   31   32   33 
+    ##    1    2    3    1    1    1    1    1    1    1    1    3    1    1    3    2 
+    ##   34   35   36   37   38   40   41   42   43   44   45   46   47   48   49   50 
+    ##    3    1    1    3    1    1    2    1    1    2    1    3    3    1    1    3 
+    ##   51   52   53   54   55   56   57   58   59   60   61   62   63   64   65   66 
+    ##    1    1    2    2    3    3    1    3    1    3    1    1    1    3    2    2 
+    ##   67   68   69   70   71   72   73   74   75   76   77   78   79   80   82   83 
+    ##    3    1    3    1    3    1    1    1    1    2    1    1    1    2    1    3 
+    ##   84   85   86   87   88   89   90   91   92   93   94   95   96   97   98   99 
+    ##    3    3    3    3    2    1    3    1    1    3    2    3    1    1    2    3 
+    ##  100  101  102  103  104  105  106  107  108  109  110  111  112  114  115  116 
+    ##    2    1    3    1    3    1    3    3    1    2    2    1    2    1    2    3 
+    ##  118  119  120  121  122  125  126  127  128  129  130  132  133  134  135  136 
+    ##    3    2    2    1    3    3    1    3    1    1    1    3    1    1    1    1 
+    ##  137  138  139  140  141  143  144  145  146  147  148  150  151  152  153  154 
+    ##    3    3    3    2    1    1    2    3    2    3    3    3    1    1    2    1 
+    ##  155  157  159  160  161  162  163  164  165  166  167  168  169  170  171  172 
+    ##    1    3    1    1    3    1    3    1    1    1    2    1    3    1    1    1 
+    ##  173  174  175  176  177  178  179  180  181  182  183  184  186  187  188  189 
+    ##    3    2    1    2    3    1    2    3    3    3    1    1    2    1    3    3 
+    ##  190  191  193  194  195  196  197  198  200  201  202  203  204  205  206  207 
+    ##    3    3    1    1    1    1    1    1    1    2    3    2    2    1    3    2 
+    ##  208  209  211  212  213  214  215  217  218  219  220  221  222  223  224  225 
+    ##    1    1    3    2    1    1    3    3    1    1    1    1    1    3    1    3 
+    ##  226  227  228  229  230  231  232  233  234  235  236  237  238  239  241  242 
+    ##    3    3    2    3    2    1    1    1    3    3    3    1    1    1    2    3 
+    ##  243  244  246  247  248  250  251  252  253  254  255  256  257  258  259  260 
+    ##    2    3    3    3    1    2    2    2    1    1    1    2    1    1    1    1 
+    ##  261  262  263  264  265  266  267  268  269  270  271  272  273  274  275  276 
+    ##    3    3    1    3    2    3    3    1    3    1    1    1    1    3    2    2 
+    ##  277  278  279  280  281  282  283  284  285  286  287  288  289  290  291  292 
+    ##    1    1    3    2    3    3    1    2    3    1    3    1    3    2    3    3 
+    ##  294  295  296  297  298  299  300  301  303  304  306  307  309  310  311  312 
+    ##    3    3    2    2    1    1    2    2    1    3    3    1    1    1    3    2 
+    ##  313  314  315  316  317  318  319  320  321  322  323  324  325  326  327  328 
+    ##    2    3    1    2    2    1    2    3    2    2    2    3    1    3    1    1 
+    ##  329  330  331  332  334  335  336  337  338  340  342  343  345  346  347  348 
+    ##    3    3    3    3    1    3    1    3    3    3    3    1    1    2    1    3 
+    ##  349  350  351  352  353  354  357  358  359  360  361  362  363  364  365  367 
+    ##    2    1    1    2    1    2    2    2    3    2    2    3    1    1    1    2 
+    ##  368  369  370  372  373  374  375  376  377  378  379  380  381  382  383  384 
+    ##    1    2    1    3    1    1    3    2    3    1    1    3    1    1    3    1 
+    ##  385  386  387  388  391  392  393  394  395  397  398  399  400  401  402  403 
+    ##    1    1    1    1    1    1    3    1    3    2    2    1    2    3    2    2 
+    ##  404  405  406  407  408  409  410  411  412  414  415  416  417  418  419  420 
+    ##    3    1    1    1    1    2    1    3    3    2    2    1    1    1    3    1 
+    ##  421  422  423  424  426  427  428  429  430  431  432  433  435  436  437  439 
+    ##    3    2    1    3    1    1    2    2    2    3    2    3    1    3    2    1 
+    ##  440  441  442  443  444  446  447  448  449  450  451  452  455  456  457  458 
+    ##    3    2    1    2    3    1    3    2    3    1    2    1    1    1    1    3 
+    ##  459  460  461  462  463  464  465  466  467  468  469  470  471  472  473  475 
+    ##    2    1    1    2    3    2    3    1    2    1    2    3    1    1    2    1 
+    ##  477  478  479  480  481  482  483  484  485  486  487  488  489  490  491  492 
+    ##    1    2    1    2    1    1    2    2    1    1    3    1    1    3    2    1 
+    ##  493  494  495  496  497  498  499  500  501  502  503  504  505  506  507  508 
+    ##    2    3    1    1    2    1    1    1    2    1    3    3    3    2    2    3 
+    ##  509  510  511  514  515  516  517  518  519  520  521  522  523  525  526  527 
+    ##    2    2    1    3    2    2    3    3    1    3    1    3    1    1    3    2 
+    ##  528  529  530  531  532  533  534  535  537  538  539  540  541  542  544  545 
+    ##    1    1    2    2    3    1    1    2    2    1    1    1    1    1    2    3 
+    ##  546  547  548  550  551  552  553  554  555  557  558  559  560  561  563  564 
+    ##    1    3    1    1    1    1    1    3    3    2    1    2    1    1    2    3 
+    ##  565  566  567  568  569  570  571  572  573  574  575  576  577  578  579  580 
+    ##    1    3    2    1    3    3    2    2    2    3    1    3    2    1    1    2 
+    ##  581  582  583  584  585  586  587  590  592  593  594  595  596  597  598  599 
+    ##    1    1    1    1    1    3    1    3    3    3    3    2    1    3    2    3 
+    ##  600  601  602  603  604  605  606  607  608  609  610  611  612  613  614  616 
+    ##    2    1    3    1    3    2    1    1    1    3    1    1    2    3    1    1 
+    ##  617  618  619  620  622  623  624  625  627  629  630  631  632  633  634  636 
+    ##    3    1    3    3    3    1    3    1    3    1    3    1    3    3    1    1 
+    ##  637  638  639  640  641  642  643  645  646  647  648  649  650  651  652  653 
+    ##    1    3    1    2    2    3    1    3    1    1    3    1    1    1    2    1 
+    ##  654  655  656  657  658  659  661  663  664  665  666  667  668  669  670  671 
+    ##    2    2    3    3    1    3    1    1    3    3    2    1    2    1    3    3 
+    ##  673  674  676  677  678  679  681  682  683  684  685  686  687  688  689  690 
+    ##    3    2    1    3    2    3    3    1    2    3    3    1    3    1    2    1 
+    ##  691  692  693  694  695  696  697  698  699  700  701  702  703  704  705  706 
+    ##    3    1    1    1    2    1    1    3    2    3    1    1    3    3    1    1 
+    ##  707  708  709  710  711  714  715  716  717  718  720  721  722  724  725  727 
+    ##    3    1    1    1    1    1    3    1    1    1    2    1    1    1    1    1 
+    ##  728  729  732  733  734  735  736  737  738  741  742  743  744  745  746  747 
+    ##    1    3    1    3    1    1    1    1    1    1    1    1    3    2    2    3 
+    ##  748  749  750  751  752  753  754  755  756  757  758  759  760  761  762  763 
+    ##    2    3    3    1    3    2    1    1    1    3    2    1    2    2    3    3 
+    ##  764  765  766  768  769  770  771  772  773  774  775  776  777  778  779  780 
+    ##    1    2    1    3    2    1    2    1    1    1    1    3    2    2    3    3 
+    ##  782  783  784  785  786  787  788  789  790  791  792  793  794  795  796  797 
+    ##    3    1    3    1    3    1    1    3    3    3    1    3    3    1    1    2 
+    ##  798  799  800  801  802  803  804  805  806  807  808  809  810  811  812  814 
+    ##    1    3    3    1    3    3    1    3    1    1    1    2    2    3    1    3 
+    ##  815  816  817  818  819  820  821  822  823  824  825  826  827  828  829  830 
+    ##    3    3    3    1    1    3    3    2    1    1    3    3    1    1    3    3 
+    ##  831  832  833  835  836  837  838  839  840  841  842  843  844  845  846  847 
+    ##    1    3    3    2    1    2    3    1    2    1    3    3    1    3    3    1 
+    ##  849  850  851  854  855  856  857  858  859  861  862  863  864  865  866  867 
+    ##    1    3    1    1    2    1    1    2    3    1    2    3    2    3    3    2 
+    ##  869  870  872  874  875  876  877  878  879  880  881  882  883  884  885  887 
+    ##    3    3    1    1    3    1    3    1    3    1    2    3    3    2    1    1 
+    ##  888  889  890  891  892  893  894  895  896  897  898  900  901  902  904  905 
+    ##    2    2    2    1    1    1    3    1    2    3    1    2    3    2    2    3 
+    ##  906  907  908  909  910  911  912  913  914  915  916  917  920  921  922  923 
+    ##    3    1    3    3    3    3    1    1    3    1    2    2    1    3    3    2 
+    ##  924  925  926  927  928  929  930  931  933  934  935  936  937  938  939  940 
+    ##    1    2    3    2    2    2    3    2    2    3    1    3    3    2    2    1 
+    ##  941  942  943  944  945  946  947  948  949  950  951  953  954  955  956  957 
+    ##    1    2    1    3    2    3    2    1    2    3    3    1    3    2    2    3 
+    ##  958  959  960  961  962  963  964  965  966  967  968  969  970  972  973  974 
+    ##    1    1    1    3    1    2    1    3    1    1    3    3    3    2    1    3 
+    ##  975  976  977  978  980  981  983  984  986  987  989  990  991  992  994  995 
+    ##    1    1    1    1    1    3    3    3    1    3    3    3    2    3    1    1 
+    ##  996  997  998 1000 
+    ##    3    3    3    1
 
 ``` r
 # Print the km.out object
 km.out
 ```
 
-    ## K-means clustering with 3 clusters of sizes 175, 237, 201
+    ## K-means clustering with 3 clusters of sizes 399, 197, 304
     ## 
     ## Cluster means:
     ##     genero admision.letras admision.numeros promedio.preparatoria edad.ingreso
-    ## 1 1.582857        59.30549         33.61098              70.08715     7.245714
-    ## 2 1.624473        56.54376         28.08752              63.71571     6.130802
-    ## 3 1.592040        64.99004         44.98009              84.52283     9.517413
+    ## 1 1.596491        55.57136         26.14272              61.68544     5.759398
+    ## 2 1.532995        66.70237         48.40474              89.46320    10.197970
+    ## 3 1.621711        61.67078         38.34156              75.01234     8.167763
     ##   evalucion.socioeconomica nota.conducta     beca Asist.Total prom.trab
-    ## 1                 3.480000      15.24571 1.137143   0.9264435  14.64532
-    ## 2                 3.485232      14.13080 1.164557   0.8808292  12.89741
-    ## 3                 3.502488      17.48259 1.139303   0.8894395  13.15051
-    ##   prom.exam prom.pagos prom.uso.biblio uso.biblio prom.uso.platf uso.platf
-    ## 1  14.62702  0.9057143        29.18286   8.542857       69.32143  8.542857
-    ## 2  12.87055  1.5648734        18.16842   3.350211       42.43776  3.350211
-    ## 3  13.12361  1.6082090        19.56426   4.194030       45.64635  4.194030
-    ##   prom.apartado.libros cambio.carrera
-    ## 1             2.130000       1.091429
-    ## 2             1.324895       1.122363
-    ## 3             1.433250       1.094527
+    ## 1                 3.458647      13.75940 1.165414   0.8955103  13.47159
+    ## 2                 3.461929      18.15736 1.152284   0.8963687  13.45331
+    ## 3                 3.476974      16.16776 1.161184   0.8964929  13.44474
+    ##   prom.exam prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera
+    ## 1  13.44729   1.378759   5.052632  5.052632             1.589599       1.112782
+    ## 2  13.43161   1.440990   4.944162  4.944162             1.571912       1.106599
+    ## 3  13.41817   1.390214   5.082237  5.082237             1.578399       1.088816
     ## 
     ## Clustering vector:
-    ##    1    2    3    4    6    7    8    9   10   11   12   13   16   18   19   20 
-    ##    2    2    2    1    1    1    2    2    1    3    3    2    2    1    3    1 
-    ##   21   22   23   24   25   26   29   32   33   34   35   36   37   40   41   44 
-    ##    1    2    1    2    2    2    2    2    3    3    1    1    3    2    3    1 
-    ##   45   46   47   48   49   50   51   52   54   55   57   58   59   60   62   65 
-    ##    1    2    1    1    2    3    1    2    1    3    2    3    2    3    1    3 
-    ##   66   67   68   70   71   72   73   74   76   78   79   80   82   83   84   86 
-    ##    1    1    1    2    3    1    1    1    3    2    2    3    2    3    1    1 
-    ##   87   88   89   91   93   94   96   98   99  100  101  102  103  104  106  107 
-    ##    3    1    2    1    2    1    1    3    1    3    2    3    2    3    3    3 
-    ##  108  109  110  111  112  114  115  118  120  125  126  129  130  139  140  141 
-    ##    2    3    3    2    3    2    3    3    3    1    2    2    1    3    1    1 
-    ##  143  144  145  147  148  150  152  154  155  159  161  162  163  164  166  168 
-    ##    1    3    3    1    2    2    1    2    1    2    3    1    3    2    2    1 
-    ##  169  170  171  173  175  177  178  179  180  181  182  183  184  186  187  189 
-    ##    1    1    2    1    2    3    1    3    3    3    3    2    2    3    2    3 
-    ##  191  194  195  197  198  200  201  202  203  204  205  207  209  211  213  215 
-    ##    1    2    2    2    1    2    3    3    3    3    1    3    1    2    2    3 
-    ##  223  224  225  226  228  230  231  232  234  235  236  238  241  243  246  247 
-    ##    1    1    2    3    3    3    2    1    1    1    3    2    3    3    1    1 
-    ##  248  250  251  252  254  255  256  258  259  261  262  264  265  267  268  269 
-    ##    2    3    3    3    2    2    3    1    2    3    1    1    3    2    2    2 
-    ##  270  272  274  277  278  279  280  281  282  284  285  286  287  289  290  291 
-    ##    1    1    3    1    2    3    3    1    2    3    2    2    1    2    3    2 
-    ##  292  294  296  297  299  301  304  306  309  310  312  313  314  318  319  320 
-    ##    3    3    1    3    2    3    1    1    2    2    3    3    2    2    3    3 
-    ##  321  323  324  326  327  329  331  332  334  335  337  338  342  343  346  350 
-    ##    1    3    2    3    1    2    1    3    1    2    1    1    3    2    3    2 
-    ##  351  352  353  354  357  358  359  361  363  364  365  367  368  369  370  376 
-    ##    1    3    2    3    3    1    1    3    1    2    2    3    1    3    2    3 
-    ##  377  378  379  380  382  384  385  387  388  391  392  394  395  398  402  404 
-    ##    1    2    2    1    2    1    1    2    2    2    2    2    2    3    1    3 
-    ##  406  407  408  409  412  414  418  420  421  423  426  427  428  429  430  431 
-    ##    1    2    2    3    2    3    2    2    3    2    1    2    1    1    3    2 
-    ##  432  433  435  436  437  441  444  446  448  449  450  451  452  455  458  459 
-    ##    3    1    1    2    3    1    2    1    3    2    2    3    2    1    2    3 
-    ##  461  462  463  467  469  470  472  473  475  478  479  481  482  483  484  485 
-    ##    2    3    2    3    3    1    2    3    2    3    1    2    1    3    3    2 
-    ##  486  488  490  491  492  496  500  502  504  505  506  507  514  515  516  517 
-    ##    2    2    1    3    2    2    1    2    2    3    3    3    1    3    3    1 
-    ##  518  519  521  522  523  525  526  527  528  529  530  531  532  534  537  538 
-    ##    3    2    1    1    2    2    3    3    2    2    3    3    1    2    3    2 
-    ##  540  541  542  544  545  546  547  553  554  558  559  560  561  563  564  565 
-    ##    2    1    1    3    3    2    3    2    3    2    1    2    2    3    3    2 
-    ##  566  569  570  574  576  579  580  582  583  584  585  587  590  593  595  596 
-    ##    2    3    3    1    1    2    3    1    2    2    2    2    2    1    3    1 
-    ##  597  598  599  600  601  603  605  606  608  609  610  612  614  620  622  624 
-    ##    3    3    3    3    1    1    3    1    2    3    2    3    1    2    2    2 
-    ##  629  630  631  633  636  638  641  642  643  645  647  648  649  650  651  652 
-    ##    2    2    2    1    2    2    1    2    1    3    2    1    2    2    2    3 
-    ##  653  656  657  658  659  661  663  666  669  670  671  673  674  676  677  678 
-    ##    2    2    2    2    3    1    2    3    2    2    3    1    3    2    3    3 
-    ##  679  681  682  683  684  685  687  688  689  690  692  693  695  696  697  699 
-    ##    3    3    1    1    1    2    3    2    3    2    2    2    3    2    2    3 
-    ##  701  702  704  706  708  709  711  714  715  718  721  722  724  725  727  729 
-    ##    2    2    1    2    2    2    2    2    1    2    2    1    1    2    1    2 
-    ##  732  733  735  737  738  742  743  744  746  747  749  752  753  754  756  757 
-    ##    1    2    2    2    2    2    2    3    3    3    1    3    3    2    2    3 
-    ##  760  762  763  766  769  771  772  773  774  776  778  779  780  783  784  785 
-    ##    1    3    3    1    3    3    2    2    2    1    1    2    3    1    2    1 
-    ##  786  787  788  789  790  792  793  795  796  797  798  799  800  801  805  806 
-    ##    1    2    1    1    2    2    1    2    1    3    2    2    3    2    3    2 
-    ##  807  808  809  811  814  816  817  819  820  821  824  825  826  827  829  833 
-    ##    2    1    3    3    3    1    3    2    1    3    2    1    2    2    2    3 
-    ##  835  836  837  838  839  840  841  842  843  844  847  850  854  856  857  858 
-    ##    3    2    1    1    2    3    1    1    2    1    1    3    2    2    2    3 
-    ##  859  861  862  863  864  867  870  877  878  879  880  881  882  883  885  887 
-    ##    1    2    3    1    1    3    3    1    2    1    2    3    2    1    1    1 
-    ##  888  889  890  893  895  897  898  900  902  904  907  909  911  912  913  914 
-    ##    3    3    3    2    2    2    2    3    3    3    2    2    2    2    1    2 
-    ##  915  916  917  920  921  922  924  925  926  927  929  930  931  933  934  935 
-    ##    2    3    3    2    1    1    1    3    2    3    3    1    3    3    3    2 
-    ##  936  938  939  940  942  943  947  948  950  951  953  954  955  956  957  958 
-    ##    2    3    1    2    3    2    3    2    3    3    1    3    3    1    2    1 
-    ##  960  964  967  968  969  970  972  975  976  977  978  980  983  986  987  992 
-    ##    2    2    1    1    3    3    1    1    2    2    1    1    1    2    3    3 
-    ##  995  996  997  998 1000 
-    ##    1    3    3    3    2 
+    ##    1    2    3    4    5    6    7    8    9   10   11   12   13   15   16   17 
+    ##    3    1    1    1    3    3    1    1    1    1    2    3    1    3    3    1 
+    ##   18   19   20   21   22   23   24   25   26   27   28   29   30   31   32   33 
+    ##    1    2    3    1    1    1    1    1    1    1    1    3    1    1    3    2 
+    ##   34   35   36   37   38   40   41   42   43   44   45   46   47   48   49   50 
+    ##    3    1    1    3    1    1    2    1    1    2    1    3    3    1    1    3 
+    ##   51   52   53   54   55   56   57   58   59   60   61   62   63   64   65   66 
+    ##    1    1    2    2    3    3    1    3    1    3    1    1    1    3    2    2 
+    ##   67   68   69   70   71   72   73   74   75   76   77   78   79   80   82   83 
+    ##    3    1    3    1    3    1    1    1    1    2    1    1    1    2    1    3 
+    ##   84   85   86   87   88   89   90   91   92   93   94   95   96   97   98   99 
+    ##    3    3    3    3    2    1    3    1    1    3    2    3    1    1    2    3 
+    ##  100  101  102  103  104  105  106  107  108  109  110  111  112  114  115  116 
+    ##    2    1    3    1    3    1    3    3    1    2    2    1    2    1    2    3 
+    ##  118  119  120  121  122  125  126  127  128  129  130  132  133  134  135  136 
+    ##    3    2    2    1    3    3    1    3    1    1    1    3    1    1    1    1 
+    ##  137  138  139  140  141  143  144  145  146  147  148  150  151  152  153  154 
+    ##    3    3    3    2    1    1    2    3    2    3    3    3    1    1    2    1 
+    ##  155  157  159  160  161  162  163  164  165  166  167  168  169  170  171  172 
+    ##    1    3    1    1    3    1    3    1    1    1    2    1    3    1    1    1 
+    ##  173  174  175  176  177  178  179  180  181  182  183  184  186  187  188  189 
+    ##    3    2    1    2    3    1    2    3    3    3    1    1    2    1    3    3 
+    ##  190  191  193  194  195  196  197  198  200  201  202  203  204  205  206  207 
+    ##    3    3    1    1    1    1    1    1    1    2    3    2    2    1    3    2 
+    ##  208  209  211  212  213  214  215  217  218  219  220  221  222  223  224  225 
+    ##    1    1    3    2    1    1    3    3    1    1    1    1    1    3    1    3 
+    ##  226  227  228  229  230  231  232  233  234  235  236  237  238  239  241  242 
+    ##    3    3    2    3    2    1    1    1    3    3    3    1    1    1    2    3 
+    ##  243  244  246  247  248  250  251  252  253  254  255  256  257  258  259  260 
+    ##    2    3    3    3    1    2    2    2    1    1    1    2    1    1    1    1 
+    ##  261  262  263  264  265  266  267  268  269  270  271  272  273  274  275  276 
+    ##    3    3    1    3    2    3    3    1    3    1    1    1    1    3    2    2 
+    ##  277  278  279  280  281  282  283  284  285  286  287  288  289  290  291  292 
+    ##    1    1    3    2    3    3    1    2    3    1    3    1    3    2    3    3 
+    ##  294  295  296  297  298  299  300  301  303  304  306  307  309  310  311  312 
+    ##    3    3    2    2    1    1    2    2    1    3    3    1    1    1    3    2 
+    ##  313  314  315  316  317  318  319  320  321  322  323  324  325  326  327  328 
+    ##    2    3    1    2    2    1    2    3    2    2    2    3    1    3    1    1 
+    ##  329  330  331  332  334  335  336  337  338  340  342  343  345  346  347  348 
+    ##    3    3    3    3    1    3    1    3    3    3    3    1    1    2    1    3 
+    ##  349  350  351  352  353  354  357  358  359  360  361  362  363  364  365  367 
+    ##    2    1    1    2    1    2    2    2    3    2    2    3    1    1    1    2 
+    ##  368  369  370  372  373  374  375  376  377  378  379  380  381  382  383  384 
+    ##    1    2    1    3    1    1    3    2    3    1    1    3    1    1    3    1 
+    ##  385  386  387  388  391  392  393  394  395  397  398  399  400  401  402  403 
+    ##    1    1    1    1    1    1    3    1    3    2    2    1    2    3    2    2 
+    ##  404  405  406  407  408  409  410  411  412  414  415  416  417  418  419  420 
+    ##    3    1    1    1    1    2    1    3    3    2    2    1    1    1    3    1 
+    ##  421  422  423  424  426  427  428  429  430  431  432  433  435  436  437  439 
+    ##    3    2    1    3    1    1    2    2    2    3    2    3    1    3    2    1 
+    ##  440  441  442  443  444  446  447  448  449  450  451  452  455  456  457  458 
+    ##    3    2    1    2    3    1    3    2    3    1    2    1    1    1    1    3 
+    ##  459  460  461  462  463  464  465  466  467  468  469  470  471  472  473  475 
+    ##    2    1    1    2    3    2    3    1    2    1    2    3    1    1    2    1 
+    ##  477  478  479  480  481  482  483  484  485  486  487  488  489  490  491  492 
+    ##    1    2    1    2    1    1    2    2    1    1    3    1    1    3    2    1 
+    ##  493  494  495  496  497  498  499  500  501  502  503  504  505  506  507  508 
+    ##    2    3    1    1    2    1    1    1    2    1    3    3    3    2    2    3 
+    ##  509  510  511  514  515  516  517  518  519  520  521  522  523  525  526  527 
+    ##    2    2    1    3    2    2    3    3    1    3    1    3    1    1    3    2 
+    ##  528  529  530  531  532  533  534  535  537  538  539  540  541  542  544  545 
+    ##    1    1    2    2    3    1    1    2    2    1    1    1    1    1    2    3 
+    ##  546  547  548  550  551  552  553  554  555  557  558  559  560  561  563  564 
+    ##    1    3    1    1    1    1    1    3    3    2    1    2    1    1    2    3 
+    ##  565  566  567  568  569  570  571  572  573  574  575  576  577  578  579  580 
+    ##    1    3    2    1    3    3    2    2    2    3    1    3    2    1    1    2 
+    ##  581  582  583  584  585  586  587  590  592  593  594  595  596  597  598  599 
+    ##    1    1    1    1    1    3    1    3    3    3    3    2    1    3    2    3 
+    ##  600  601  602  603  604  605  606  607  608  609  610  611  612  613  614  616 
+    ##    2    1    3    1    3    2    1    1    1    3    1    1    2    3    1    1 
+    ##  617  618  619  620  622  623  624  625  627  629  630  631  632  633  634  636 
+    ##    3    1    3    3    3    1    3    1    3    1    3    1    3    3    1    1 
+    ##  637  638  639  640  641  642  643  645  646  647  648  649  650  651  652  653 
+    ##    1    3    1    2    2    3    1    3    1    1    3    1    1    1    2    1 
+    ##  654  655  656  657  658  659  661  663  664  665  666  667  668  669  670  671 
+    ##    2    2    3    3    1    3    1    1    3    3    2    1    2    1    3    3 
+    ##  673  674  676  677  678  679  681  682  683  684  685  686  687  688  689  690 
+    ##    3    2    1    3    2    3    3    1    2    3    3    1    3    1    2    1 
+    ##  691  692  693  694  695  696  697  698  699  700  701  702  703  704  705  706 
+    ##    3    1    1    1    2    1    1    3    2    3    1    1    3    3    1    1 
+    ##  707  708  709  710  711  714  715  716  717  718  720  721  722  724  725  727 
+    ##    3    1    1    1    1    1    3    1    1    1    2    1    1    1    1    1 
+    ##  728  729  732  733  734  735  736  737  738  741  742  743  744  745  746  747 
+    ##    1    3    1    3    1    1    1    1    1    1    1    1    3    2    2    3 
+    ##  748  749  750  751  752  753  754  755  756  757  758  759  760  761  762  763 
+    ##    2    3    3    1    3    2    1    1    1    3    2    1    2    2    3    3 
+    ##  764  765  766  768  769  770  771  772  773  774  775  776  777  778  779  780 
+    ##    1    2    1    3    2    1    2    1    1    1    1    3    2    2    3    3 
+    ##  782  783  784  785  786  787  788  789  790  791  792  793  794  795  796  797 
+    ##    3    1    3    1    3    1    1    3    3    3    1    3    3    1    1    2 
+    ##  798  799  800  801  802  803  804  805  806  807  808  809  810  811  812  814 
+    ##    1    3    3    1    3    3    1    3    1    1    1    2    2    3    1    3 
+    ##  815  816  817  818  819  820  821  822  823  824  825  826  827  828  829  830 
+    ##    3    3    3    1    1    3    3    2    1    1    3    3    1    1    3    3 
+    ##  831  832  833  835  836  837  838  839  840  841  842  843  844  845  846  847 
+    ##    1    3    3    2    1    2    3    1    2    1    3    3    1    3    3    1 
+    ##  849  850  851  854  855  856  857  858  859  861  862  863  864  865  866  867 
+    ##    1    3    1    1    2    1    1    2    3    1    2    3    2    3    3    2 
+    ##  869  870  872  874  875  876  877  878  879  880  881  882  883  884  885  887 
+    ##    3    3    1    1    3    1    3    1    3    1    2    3    3    2    1    1 
+    ##  888  889  890  891  892  893  894  895  896  897  898  900  901  902  904  905 
+    ##    2    2    2    1    1    1    3    1    2    3    1    2    3    2    2    3 
+    ##  906  907  908  909  910  911  912  913  914  915  916  917  920  921  922  923 
+    ##    3    1    3    3    3    3    1    1    3    1    2    2    1    3    3    2 
+    ##  924  925  926  927  928  929  930  931  933  934  935  936  937  938  939  940 
+    ##    1    2    3    2    2    2    3    2    2    3    1    3    3    2    2    1 
+    ##  941  942  943  944  945  946  947  948  949  950  951  953  954  955  956  957 
+    ##    1    2    1    3    2    3    2    1    2    3    3    1    3    2    2    3 
+    ##  958  959  960  961  962  963  964  965  966  967  968  969  970  972  973  974 
+    ##    1    1    1    3    1    2    1    3    1    1    3    3    3    2    1    3 
+    ##  975  976  977  978  980  981  983  984  986  987  989  990  991  992  994  995 
+    ##    1    1    1    1    1    3    3    3    1    3    3    3    2    3    1    1 
+    ##  996  997  998 1000 
+    ##    3    3    3    1 
     ## 
     ## Within cluster sum of squares by cluster:
-    ## [1] 53045.52 37450.50 40911.10
-    ##  (between_SS / total_SS =  59.5 %)
+    ## [1] 28036.41 16111.21 15672.11
+    ##  (between_SS / total_SS =  76.8 %)
     ## 
     ## Available components:
     ## 
     ## [1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss"
     ## [6] "betweenss"    "size"         "iter"         "ifault"
 
+``` r
+km.out$cluster
+```
+
+    ##    1    2    3    4    5    6    7    8    9   10   11   12   13   15   16   17 
+    ##    3    1    1    1    3    3    1    1    1    1    2    3    1    3    3    1 
+    ##   18   19   20   21   22   23   24   25   26   27   28   29   30   31   32   33 
+    ##    1    2    3    1    1    1    1    1    1    1    1    3    1    1    3    2 
+    ##   34   35   36   37   38   40   41   42   43   44   45   46   47   48   49   50 
+    ##    3    1    1    3    1    1    2    1    1    2    1    3    3    1    1    3 
+    ##   51   52   53   54   55   56   57   58   59   60   61   62   63   64   65   66 
+    ##    1    1    2    2    3    3    1    3    1    3    1    1    1    3    2    2 
+    ##   67   68   69   70   71   72   73   74   75   76   77   78   79   80   82   83 
+    ##    3    1    3    1    3    1    1    1    1    2    1    1    1    2    1    3 
+    ##   84   85   86   87   88   89   90   91   92   93   94   95   96   97   98   99 
+    ##    3    3    3    3    2    1    3    1    1    3    2    3    1    1    2    3 
+    ##  100  101  102  103  104  105  106  107  108  109  110  111  112  114  115  116 
+    ##    2    1    3    1    3    1    3    3    1    2    2    1    2    1    2    3 
+    ##  118  119  120  121  122  125  126  127  128  129  130  132  133  134  135  136 
+    ##    3    2    2    1    3    3    1    3    1    1    1    3    1    1    1    1 
+    ##  137  138  139  140  141  143  144  145  146  147  148  150  151  152  153  154 
+    ##    3    3    3    2    1    1    2    3    2    3    3    3    1    1    2    1 
+    ##  155  157  159  160  161  162  163  164  165  166  167  168  169  170  171  172 
+    ##    1    3    1    1    3    1    3    1    1    1    2    1    3    1    1    1 
+    ##  173  174  175  176  177  178  179  180  181  182  183  184  186  187  188  189 
+    ##    3    2    1    2    3    1    2    3    3    3    1    1    2    1    3    3 
+    ##  190  191  193  194  195  196  197  198  200  201  202  203  204  205  206  207 
+    ##    3    3    1    1    1    1    1    1    1    2    3    2    2    1    3    2 
+    ##  208  209  211  212  213  214  215  217  218  219  220  221  222  223  224  225 
+    ##    1    1    3    2    1    1    3    3    1    1    1    1    1    3    1    3 
+    ##  226  227  228  229  230  231  232  233  234  235  236  237  238  239  241  242 
+    ##    3    3    2    3    2    1    1    1    3    3    3    1    1    1    2    3 
+    ##  243  244  246  247  248  250  251  252  253  254  255  256  257  258  259  260 
+    ##    2    3    3    3    1    2    2    2    1    1    1    2    1    1    1    1 
+    ##  261  262  263  264  265  266  267  268  269  270  271  272  273  274  275  276 
+    ##    3    3    1    3    2    3    3    1    3    1    1    1    1    3    2    2 
+    ##  277  278  279  280  281  282  283  284  285  286  287  288  289  290  291  292 
+    ##    1    1    3    2    3    3    1    2    3    1    3    1    3    2    3    3 
+    ##  294  295  296  297  298  299  300  301  303  304  306  307  309  310  311  312 
+    ##    3    3    2    2    1    1    2    2    1    3    3    1    1    1    3    2 
+    ##  313  314  315  316  317  318  319  320  321  322  323  324  325  326  327  328 
+    ##    2    3    1    2    2    1    2    3    2    2    2    3    1    3    1    1 
+    ##  329  330  331  332  334  335  336  337  338  340  342  343  345  346  347  348 
+    ##    3    3    3    3    1    3    1    3    3    3    3    1    1    2    1    3 
+    ##  349  350  351  352  353  354  357  358  359  360  361  362  363  364  365  367 
+    ##    2    1    1    2    1    2    2    2    3    2    2    3    1    1    1    2 
+    ##  368  369  370  372  373  374  375  376  377  378  379  380  381  382  383  384 
+    ##    1    2    1    3    1    1    3    2    3    1    1    3    1    1    3    1 
+    ##  385  386  387  388  391  392  393  394  395  397  398  399  400  401  402  403 
+    ##    1    1    1    1    1    1    3    1    3    2    2    1    2    3    2    2 
+    ##  404  405  406  407  408  409  410  411  412  414  415  416  417  418  419  420 
+    ##    3    1    1    1    1    2    1    3    3    2    2    1    1    1    3    1 
+    ##  421  422  423  424  426  427  428  429  430  431  432  433  435  436  437  439 
+    ##    3    2    1    3    1    1    2    2    2    3    2    3    1    3    2    1 
+    ##  440  441  442  443  444  446  447  448  449  450  451  452  455  456  457  458 
+    ##    3    2    1    2    3    1    3    2    3    1    2    1    1    1    1    3 
+    ##  459  460  461  462  463  464  465  466  467  468  469  470  471  472  473  475 
+    ##    2    1    1    2    3    2    3    1    2    1    2    3    1    1    2    1 
+    ##  477  478  479  480  481  482  483  484  485  486  487  488  489  490  491  492 
+    ##    1    2    1    2    1    1    2    2    1    1    3    1    1    3    2    1 
+    ##  493  494  495  496  497  498  499  500  501  502  503  504  505  506  507  508 
+    ##    2    3    1    1    2    1    1    1    2    1    3    3    3    2    2    3 
+    ##  509  510  511  514  515  516  517  518  519  520  521  522  523  525  526  527 
+    ##    2    2    1    3    2    2    3    3    1    3    1    3    1    1    3    2 
+    ##  528  529  530  531  532  533  534  535  537  538  539  540  541  542  544  545 
+    ##    1    1    2    2    3    1    1    2    2    1    1    1    1    1    2    3 
+    ##  546  547  548  550  551  552  553  554  555  557  558  559  560  561  563  564 
+    ##    1    3    1    1    1    1    1    3    3    2    1    2    1    1    2    3 
+    ##  565  566  567  568  569  570  571  572  573  574  575  576  577  578  579  580 
+    ##    1    3    2    1    3    3    2    2    2    3    1    3    2    1    1    2 
+    ##  581  582  583  584  585  586  587  590  592  593  594  595  596  597  598  599 
+    ##    1    1    1    1    1    3    1    3    3    3    3    2    1    3    2    3 
+    ##  600  601  602  603  604  605  606  607  608  609  610  611  612  613  614  616 
+    ##    2    1    3    1    3    2    1    1    1    3    1    1    2    3    1    1 
+    ##  617  618  619  620  622  623  624  625  627  629  630  631  632  633  634  636 
+    ##    3    1    3    3    3    1    3    1    3    1    3    1    3    3    1    1 
+    ##  637  638  639  640  641  642  643  645  646  647  648  649  650  651  652  653 
+    ##    1    3    1    2    2    3    1    3    1    1    3    1    1    1    2    1 
+    ##  654  655  656  657  658  659  661  663  664  665  666  667  668  669  670  671 
+    ##    2    2    3    3    1    3    1    1    3    3    2    1    2    1    3    3 
+    ##  673  674  676  677  678  679  681  682  683  684  685  686  687  688  689  690 
+    ##    3    2    1    3    2    3    3    1    2    3    3    1    3    1    2    1 
+    ##  691  692  693  694  695  696  697  698  699  700  701  702  703  704  705  706 
+    ##    3    1    1    1    2    1    1    3    2    3    1    1    3    3    1    1 
+    ##  707  708  709  710  711  714  715  716  717  718  720  721  722  724  725  727 
+    ##    3    1    1    1    1    1    3    1    1    1    2    1    1    1    1    1 
+    ##  728  729  732  733  734  735  736  737  738  741  742  743  744  745  746  747 
+    ##    1    3    1    3    1    1    1    1    1    1    1    1    3    2    2    3 
+    ##  748  749  750  751  752  753  754  755  756  757  758  759  760  761  762  763 
+    ##    2    3    3    1    3    2    1    1    1    3    2    1    2    2    3    3 
+    ##  764  765  766  768  769  770  771  772  773  774  775  776  777  778  779  780 
+    ##    1    2    1    3    2    1    2    1    1    1    1    3    2    2    3    3 
+    ##  782  783  784  785  786  787  788  789  790  791  792  793  794  795  796  797 
+    ##    3    1    3    1    3    1    1    3    3    3    1    3    3    1    1    2 
+    ##  798  799  800  801  802  803  804  805  806  807  808  809  810  811  812  814 
+    ##    1    3    3    1    3    3    1    3    1    1    1    2    2    3    1    3 
+    ##  815  816  817  818  819  820  821  822  823  824  825  826  827  828  829  830 
+    ##    3    3    3    1    1    3    3    2    1    1    3    3    1    1    3    3 
+    ##  831  832  833  835  836  837  838  839  840  841  842  843  844  845  846  847 
+    ##    1    3    3    2    1    2    3    1    2    1    3    3    1    3    3    1 
+    ##  849  850  851  854  855  856  857  858  859  861  862  863  864  865  866  867 
+    ##    1    3    1    1    2    1    1    2    3    1    2    3    2    3    3    2 
+    ##  869  870  872  874  875  876  877  878  879  880  881  882  883  884  885  887 
+    ##    3    3    1    1    3    1    3    1    3    1    2    3    3    2    1    1 
+    ##  888  889  890  891  892  893  894  895  896  897  898  900  901  902  904  905 
+    ##    2    2    2    1    1    1    3    1    2    3    1    2    3    2    2    3 
+    ##  906  907  908  909  910  911  912  913  914  915  916  917  920  921  922  923 
+    ##    3    1    3    3    3    3    1    1    3    1    2    2    1    3    3    2 
+    ##  924  925  926  927  928  929  930  931  933  934  935  936  937  938  939  940 
+    ##    1    2    3    2    2    2    3    2    2    3    1    3    3    2    2    1 
+    ##  941  942  943  944  945  946  947  948  949  950  951  953  954  955  956  957 
+    ##    1    2    1    3    2    3    2    1    2    3    3    1    3    2    2    3 
+    ##  958  959  960  961  962  963  964  965  966  967  968  969  970  972  973  974 
+    ##    1    1    1    3    1    2    1    3    1    1    3    3    3    2    1    3 
+    ##  975  976  977  978  980  981  983  984  986  987  989  990  991  992  994  995 
+    ##    1    1    1    1    1    3    3    3    1    3    3    3    2    3    1    1 
+    ##  996  997  998 1000 
+    ##    3    3    3    1
+
+Agregar Columna para identificar Grupo en Riesgo *Grupo De Riesgo
+Seleccionado 3*
+
+``` r
+desercion <- vector(mode="numeric", length = nrow(alumnos.actuales))
+alumnos.actuales <- cbind(alumnos.actuales, desercion)
+alumnos.actuales[km.out$cluster==3,]$desercion <- 1
+
+str(alumnos.actuales)
+```
+
+    ## 'data.frame':    900 obs. of  17 variables:
+    ##  $ genero                  : num  2 2 2 1 2 2 2 2 1 2 ...
+    ##  $ admision.letras         : num  60.1 59.1 53.1 57 61.5 ...
+    ##  $ admision.numeros        : num  35.2 33.2 21.3 29 37.9 ...
+    ##  $ promedio.preparatoria   : num  70.3 67.2 60 61 74.4 ...
+    ##  $ edad.ingreso            : num  8 7 5 6 8 8 5 7 4 7 ...
+    ##  $ evalucion.socioeconomica: num  4 4 4 4 4 4 4 4 4 4 ...
+    ##  $ nota.conducta           : num  16 15 13 14 16 16 13 15 12 15 ...
+    ##  $ beca                    : num  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ Asist.Total             : num  0.875 0.857 0.842 0.915 0.844 ...
+    ##  $ prom.trab               : num  12.5 13.1 12.5 14.2 12.4 ...
+    ##  $ prom.exam               : num  12.5 13.1 12.5 14.2 12.4 ...
+    ##  $ prom.pagos              : num  2 0 0 2 2 0 0 2 2 2 ...
+    ##  $ uso.biblio              : num  2 3 1 7 2 5 11 6 1 7 ...
+    ##  $ uso.platf               : num  2 3 1 7 2 5 11 6 1 7 ...
+    ##  $ prom.apartado.libros    : num  1.25 1.33 1.08 1.92 1.08 ...
+    ##  $ cambio.carrera          : num  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ desercion               : num  1 0 0 0 1 1 0 0 0 0 ...
+
+``` r
+head(alumnos.actuales,5)
+```
+
+    ##   genero admision.letras admision.numeros promedio.preparatoria edad.ingreso
+    ## 1      2        60.09373         35.18746              70.28119            8
+    ## 2      2        59.07874         33.15747              67.23621            7
+    ## 3      2        53.14335         21.28669              60.00000            5
+    ## 4      1        57.00416         29.00832              61.01248            6
+    ## 5      2        61.47273         37.94545              74.41818            8
+    ##   evalucion.socioeconomica nota.conducta beca Asist.Total prom.trab prom.exam
+    ## 1                        4            16    1   0.8750000  12.47364  12.51429
+    ## 2                        4            15    1   0.8567708  13.13827  13.10560
+    ## 3                        4            13    1   0.8424479  12.53885  12.51326
+    ## 4                        4            14    1   0.9153646  14.21924  14.17651
+    ## 5                        4            16    1   0.8437500  12.44557  12.39884
+    ##   prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera desercion
+    ## 1          2          2         2             1.250000              1         1
+    ## 2          0          3         3             1.333333              1         0
+    ## 3          0          1         1             1.083333              1         0
+    ## 4          2          7         7             1.916667              1         0
+    ## 5          2          2         2             1.083333              1         1
+
 ## PCA
 
 ``` r
-res.pca <- PCA(alumnos.training, graph = FALSE)
-fviz_screeplot (res.pca, addlabels = TRUE, ylim = c (0, 50))
+res.pca <- PCA(alumnos.actuales, graph = FALSE)
+fviz_screeplot(res.pca, addlabels = TRUE, ylim = c (0, 50))
 ```
 
 ![](figure/imgs/README_figs/README-unnamed-chunk-21-1.png)<!-- -->
@@ -1150,16 +1268,269 @@ gradient.cols = c ("#00AFBB", "#E7B800", "#FC4E07"),
 ## Mostrar los Clusters
 
 ``` r
-p1 <- fviz_cluster(km.out, data = alumnos.training, frame.type = "convex") + theme_minimal () + ggtitle ("k = 3")
+p1 <- fviz_cluster(km.out, data = alumnos.actuales, ellipse.type = "convex") + theme_minimal () + ggtitle ("k = 3")
+plot_grid(p1)
 ```
 
-    ## Warning: argument frame is deprecated; please use ellipse instead.
-
-    ## Warning: argument frame.type is deprecated; please use ellipse.type instead.
+![](figure/imgs/README_figs/README-unnamed-chunk-23-1.png)<!-- --> \#\#
+Separar datos para Red Neuronal
 
 ``` r
-#plot_grid(p1)
+set.seed(1234)
+
+alumnos.sep <- sample(x=c(0,1),size=nrow(alumnos.actuales),replace=TRUE,prob = c(0.78,0.21))
+#alumnos.sep
+head(alumnos.sep,3)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to
+    ## [1] 0 0 0
+
+``` r
+alumnos.training <- alumnos.actuales[alumnos.sep==0,]
+alumnos.test <- alumnos.actuales[alumnos.sep==1,]
+```
+
+``` r
+str(alumnos.training)
+```
+
+    ## 'data.frame':    700 obs. of  17 variables:
+    ##  $ genero                  : num  2 2 2 1 2 2 2 1 2 1 ...
+    ##  $ admision.letras         : num  60.1 59.1 53.1 57 61.9 ...
+    ##  $ admision.numeros        : num  35.2 33.2 21.3 29 38.9 ...
+    ##  $ promedio.preparatoria   : num  70.3 67.2 60 61 75.8 ...
+    ##  $ edad.ingreso            : num  8 7 5 6 8 5 7 4 7 10 ...
+    ##  $ evalucion.socioeconomica: num  4 4 4 4 4 4 4 4 4 4 ...
+    ##  $ nota.conducta           : num  16 15 13 14 16 13 15 12 15 18 ...
+    ##  $ beca                    : num  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ Asist.Total             : num  0.875 0.857 0.842 0.915 0.876 ...
+    ##  $ prom.trab               : num  12.5 13.1 12.5 14.2 13.5 ...
+    ##  $ prom.exam               : num  12.5 13.1 12.5 14.2 13.4 ...
+    ##  $ prom.pagos              : num  2 0 0 2 0 0 2 2 2 2 ...
+    ##  $ uso.biblio              : num  2 3 1 7 5 11 6 1 7 1 ...
+    ##  $ uso.platf               : num  2 3 1 7 5 11 6 1 7 1 ...
+    ##  $ prom.apartado.libros    : num  1.25 1.33 1.08 1.92 1.92 ...
+    ##  $ cambio.carrera          : num  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ desercion               : num  1 0 0 0 1 0 0 0 0 0 ...
+
+``` r
+str(alumnos.test)
+```
+
+    ## 'data.frame':    200 obs. of  17 variables:
+    ##  $ genero                  : num  2 2 2 1 1 2 2 2 2 2 ...
+    ##  $ admision.letras         : num  61.5 63.7 55.2 56.6 59.5 ...
+    ##  $ admision.numeros        : num  37.9 42.4 25.5 28.1 34 ...
+    ##  $ promedio.preparatoria   : num  74.4 81.1 60 60 68.5 ...
+    ##  $ edad.ingreso            : num  8 9 6 6 7 7 10 6 7 6 ...
+    ##  $ evalucion.socioeconomica: num  4 4 4 3 3 4 4 4 4 4 ...
+    ##  $ nota.conducta           : num  16 17 14 14 15 15 18 14 15 14 ...
+    ##  $ beca                    : num  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ Asist.Total             : num  0.844 0.884 0.889 0.948 0.871 ...
+    ##  $ prom.trab               : num  12.4 14.1 11.9 14.7 11.9 ...
+    ##  $ prom.exam               : num  12.4 14.1 11.9 14.7 11.8 ...
+    ##  $ prom.pagos              : num  2 2 1.88 0 2 ...
+    ##  $ uso.biblio              : num  2 6 0 10 0 2 3 8 8 9 ...
+    ##  $ uso.platf               : num  2 6 0 10 0 2 3 8 8 9 ...
+    ##  $ prom.apartado.libros    : num  1.083 1.833 0.917 2.167 0.917 ...
+    ##  $ cambio.carrera          : num  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ desercion               : num  1 1 0 0 1 0 0 0 0 0 ...
+
+## Guardar datos
+
+``` r
+alumnos.training$genero <- as.numeric(alumnos.training$genero)
+alumnos.training$edad.ingreso <- as.numeric(alumnos.training$edad.ingreso)
+alumnos.training$evalucion.socioeconomica <- as.numeric(alumnos.training$evalucion.socioeconomica)
+alumnos.training$beca <- as.numeric(alumnos.training$beca)
+alumnos.training$cambio.carrera <- as.numeric(alumnos.training$cambio.carrera)
+str(alumnos.training)
+```
+
+    ## 'data.frame':    700 obs. of  17 variables:
+    ##  $ genero                  : num  2 2 2 1 2 2 2 1 2 1 ...
+    ##  $ admision.letras         : num  60.1 59.1 53.1 57 61.9 ...
+    ##  $ admision.numeros        : num  35.2 33.2 21.3 29 38.9 ...
+    ##  $ promedio.preparatoria   : num  70.3 67.2 60 61 75.8 ...
+    ##  $ edad.ingreso            : num  8 7 5 6 8 5 7 4 7 10 ...
+    ##  $ evalucion.socioeconomica: num  4 4 4 4 4 4 4 4 4 4 ...
+    ##  $ nota.conducta           : num  16 15 13 14 16 13 15 12 15 18 ...
+    ##  $ beca                    : num  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ Asist.Total             : num  0.875 0.857 0.842 0.915 0.876 ...
+    ##  $ prom.trab               : num  12.5 13.1 12.5 14.2 13.5 ...
+    ##  $ prom.exam               : num  12.5 13.1 12.5 14.2 13.4 ...
+    ##  $ prom.pagos              : num  2 0 0 2 0 0 2 2 2 2 ...
+    ##  $ uso.biblio              : num  2 3 1 7 5 11 6 1 7 1 ...
+    ##  $ uso.platf               : num  2 3 1 7 5 11 6 1 7 1 ...
+    ##  $ prom.apartado.libros    : num  1.25 1.33 1.08 1.92 1.92 ...
+    ##  $ cambio.carrera          : num  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ desercion               : num  1 0 0 0 1 0 0 0 0 0 ...
+
+``` r
+head(alumnos.training,5)
+```
+
+    ##   genero admision.letras admision.numeros promedio.preparatoria edad.ingreso
+    ## 1      2        60.09373         35.18746              70.28119            8
+    ## 2      2        59.07874         33.15747              67.23621            7
+    ## 3      2        53.14335         21.28669              60.00000            5
+    ## 4      1        57.00416         29.00832              61.01248            6
+    ## 6      2        61.94897         38.89794              75.84691            8
+    ##   evalucion.socioeconomica nota.conducta beca Asist.Total prom.trab prom.exam
+    ## 1                        4            16    1   0.8750000  12.47364  12.51429
+    ## 2                        4            15    1   0.8567708  13.13827  13.10560
+    ## 3                        4            13    1   0.8424479  12.53885  12.51326
+    ## 4                        4            14    1   0.9153646  14.21924  14.17651
+    ## 6                        4            16    1   0.8763021  13.51499  13.43474
+    ##   prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera desercion
+    ## 1          2          2         2             1.250000              1         1
+    ## 2          0          3         3             1.333333              1         0
+    ## 3          0          1         1             1.083333              1         0
+    ## 4          2          7         7             1.916667              1         0
+    ## 6          0          5         5             1.916667              1         1
+
+``` r
+summary(alumnos.training)
+```
+
+    ##      genero      admision.letras admision.numeros promedio.preparatoria
+    ##  Min.   :1.000   Min.   :44.99   Min.   : 4.986   Min.   : 60.00       
+    ##  1st Qu.:1.000   1st Qu.:56.62   1st Qu.:28.244   1st Qu.: 60.00       
+    ##  Median :2.000   Median :60.26   Median :35.519   Median : 70.78       
+    ##  Mean   :1.614   Mean   :60.16   Mean   :35.330   Mean   : 72.53       
+    ##  3rd Qu.:2.000   3rd Qu.:63.78   3rd Qu.:42.561   3rd Qu.: 81.34       
+    ##  Max.   :2.000   Max.   :77.71   Max.   :70.411   Max.   :100.00       
+    ##   edad.ingreso    evalucion.socioeconomica nota.conducta        beca      
+    ##  Min.   : 1.000   Min.   :1.000            Min.   : 9.00   Min.   :1.000  
+    ##  1st Qu.: 6.000   1st Qu.:3.000            1st Qu.:14.00   1st Qu.:1.000  
+    ##  Median : 8.000   Median :4.000            Median :16.00   Median :1.000  
+    ##  Mean   : 7.584   Mean   :3.499            Mean   :15.57   Mean   :1.153  
+    ##  3rd Qu.: 9.000   3rd Qu.:4.000            3rd Qu.:17.00   3rd Qu.:1.000  
+    ##  Max.   :15.000   Max.   :4.000            Max.   :20.00   Max.   :2.000  
+    ##   Asist.Total       prom.trab       prom.exam       prom.pagos   
+    ##  Min.   :0.7188   Min.   :11.60   Min.   :11.54   Min.   :0.000  
+    ##  1st Qu.:0.8633   1st Qu.:12.67   1st Qu.:12.65   1st Qu.:0.000  
+    ##  Median :0.9115   Median :13.38   Median :13.37   Median :1.875  
+    ##  Mean   :0.8962   Mean   :13.49   Mean   :13.47   Mean   :1.394  
+    ##  3rd Qu.:0.9375   3rd Qu.:14.19   3rd Qu.:14.16   3rd Qu.:2.000  
+    ##  Max.   :0.9479   Max.   :16.22   Max.   :16.23   Max.   :2.000  
+    ##    uso.biblio       uso.platf      prom.apartado.libros cambio.carrera 
+    ##  Min.   : 0.000   Min.   : 0.000   Min.   :0.8333       Min.   :1.000  
+    ##  1st Qu.: 3.000   1st Qu.: 3.000   1st Qu.:1.2500       1st Qu.:1.000  
+    ##  Median : 5.000   Median : 5.000   Median :1.5417       Median :1.000  
+    ##  Mean   : 5.134   Mean   : 5.134   Mean   :1.5957       Mean   :1.099  
+    ##  3rd Qu.: 8.000   3rd Qu.: 8.000   3rd Qu.:1.9167       3rd Qu.:1.000  
+    ##  Max.   :12.000   Max.   :12.000   Max.   :2.7500       Max.   :2.000  
+    ##    desercion     
+    ##  Min.   :0.0000  
+    ##  1st Qu.:0.0000  
+    ##  Median :0.0000  
+    ##  Mean   :0.3386  
+    ##  3rd Qu.:1.0000  
+    ##  Max.   :1.0000
+
+``` r
+alumnos.test$genero <- as.numeric(alumnos.test$genero)
+alumnos.test$edad.ingreso <- as.numeric(alumnos.test$edad.ingreso)
+alumnos.test$evalucion.socioeconomica <- as.numeric(alumnos.test$evalucion.socioeconomica)
+alumnos.test$beca <- as.numeric(alumnos.test$beca)
+alumnos.test$cambio.carrera <- as.numeric(alumnos.test$cambio.carrera)
+str(alumnos.test)
+```
+
+    ## 'data.frame':    200 obs. of  17 variables:
+    ##  $ genero                  : num  2 2 2 1 1 2 2 2 2 2 ...
+    ##  $ admision.letras         : num  61.5 63.7 55.2 56.6 59.5 ...
+    ##  $ admision.numeros        : num  37.9 42.4 25.5 28.1 34 ...
+    ##  $ promedio.preparatoria   : num  74.4 81.1 60 60 68.5 ...
+    ##  $ edad.ingreso            : num  8 9 6 6 7 7 10 6 7 6 ...
+    ##  $ evalucion.socioeconomica: num  4 4 4 3 3 4 4 4 4 4 ...
+    ##  $ nota.conducta           : num  16 17 14 14 15 15 18 14 15 14 ...
+    ##  $ beca                    : num  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ Asist.Total             : num  0.844 0.884 0.889 0.948 0.871 ...
+    ##  $ prom.trab               : num  12.4 14.1 11.9 14.7 11.9 ...
+    ##  $ prom.exam               : num  12.4 14.1 11.9 14.7 11.8 ...
+    ##  $ prom.pagos              : num  2 2 1.88 0 2 ...
+    ##  $ uso.biblio              : num  2 6 0 10 0 2 3 8 8 9 ...
+    ##  $ uso.platf               : num  2 6 0 10 0 2 3 8 8 9 ...
+    ##  $ prom.apartado.libros    : num  1.083 1.833 0.917 2.167 0.917 ...
+    ##  $ cambio.carrera          : num  1 1 1 1 1 1 1 1 1 1 ...
+    ##  $ desercion               : num  1 1 0 0 1 0 0 0 0 0 ...
+
+``` r
+head(alumnos.test,5)
+```
+
+    ##    genero admision.letras admision.numeros promedio.preparatoria edad.ingreso
+    ## 5       2        61.47273         37.94545              74.41818            8
+    ## 15      2        63.70695         42.41390              81.12085            9
+    ## 17      2        55.22528         25.45056              60.00000            6
+    ## 27      1        56.56222         28.12445              60.00000            6
+    ## 29      1        59.49119         33.98239              68.47358            7
+    ##    evalucion.socioeconomica nota.conducta beca Asist.Total prom.trab prom.exam
+    ## 5                         4            16    1   0.8437500  12.44557  12.39884
+    ## 15                        4            17    1   0.8841146  14.14316  14.05269
+    ## 17                        4            14    1   0.8893229  11.90611  11.88356
+    ## 27                        3            14    1   0.9479167  14.66385  14.65953
+    ## 29                        3            15    1   0.8710938  11.87169  11.83277
+    ##    prom.pagos uso.biblio uso.platf prom.apartado.libros cambio.carrera
+    ## 5       2.000          2         2            1.0833333              1
+    ## 15      2.000          6         6            1.8333333              1
+    ## 17      1.875          0         0            0.9166667              1
+    ## 27      0.000         10        10            2.1666667              1
+    ## 29      2.000          0         0            0.9166667              1
+    ##    desercion
+    ## 5          1
+    ## 15         1
+    ## 17         0
+    ## 27         0
+    ## 29         1
+
+``` r
+summary(alumnos.test)
+```
+
+    ##      genero     admision.letras admision.numeros promedio.preparatoria
+    ##  Min.   :1.00   Min.   :46.78   Min.   : 8.562   Min.   : 60.00       
+    ##  1st Qu.:1.00   1st Qu.:56.52   1st Qu.:28.033   1st Qu.: 60.00       
+    ##  Median :2.00   Median :59.55   Median :34.094   Median : 68.64       
+    ##  Mean   :1.51   Mean   :59.73   Mean   :34.459   Mean   : 71.35       
+    ##  3rd Qu.:2.00   3rd Qu.:63.19   3rd Qu.:41.388   3rd Qu.: 79.58       
+    ##  Max.   :2.00   Max.   :73.50   Max.   :62.006   Max.   :100.00       
+    ##   edad.ingreso    evalucion.socioeconomica nota.conducta       beca     
+    ##  Min.   : 2.000   Min.   :1.00             Min.   :10.0   Min.   :1.00  
+    ##  1st Qu.: 6.000   1st Qu.:3.00             1st Qu.:14.0   1st Qu.:1.00  
+    ##  Median : 7.000   Median :4.00             Median :15.0   Median :1.00  
+    ##  Mean   : 7.405   Mean   :3.35             Mean   :15.4   Mean   :1.19  
+    ##  3rd Qu.: 9.000   3rd Qu.:4.00             3rd Qu.:17.0   3rd Qu.:1.00  
+    ##  Max.   :13.000   Max.   :4.00             Max.   :20.0   Max.   :2.00  
+    ##   Asist.Total       prom.trab       prom.exam       prom.pagos   
+    ##  Min.   :0.7161   Min.   :11.55   Min.   :11.54   Min.   :0.000  
+    ##  1st Qu.:0.8643   1st Qu.:12.55   1st Qu.:12.51   1st Qu.:0.000  
+    ##  Median :0.9069   Median :13.27   Median :13.24   Median :1.875  
+    ##  Mean   :0.8953   Mean   :13.34   Mean   :13.32   Mean   :1.403  
+    ##  3rd Qu.:0.9323   3rd Qu.:14.01   3rd Qu.:14.00   3rd Qu.:2.000  
+    ##  Max.   :0.9479   Max.   :16.16   Max.   :16.19   Max.   :2.000  
+    ##    uso.biblio       uso.platf      prom.apartado.libros cambio.carrera
+    ##  Min.   : 0.000   Min.   : 0.000   Min.   :0.8333       Min.   :1.00  
+    ##  1st Qu.: 2.000   1st Qu.: 2.000   1st Qu.:1.1667       1st Qu.:1.00  
+    ##  Median : 5.000   Median : 5.000   Median :1.5000       Median :1.00  
+    ##  Mean   : 4.705   Mean   : 4.705   Mean   :1.5337       Mean   :1.12  
+    ##  3rd Qu.: 7.000   3rd Qu.: 7.000   3rd Qu.:1.8333       3rd Qu.:1.00  
+    ##  Max.   :12.000   Max.   :12.000   Max.   :2.6667       Max.   :2.00  
+    ##    desercion    
+    ##  Min.   :0.000  
+    ##  1st Qu.:0.000  
+    ##  Median :0.000  
+    ##  Mean   :0.335  
+    ##  3rd Qu.:1.000  
+    ##  Max.   :1.000
+
+``` r
+setwd(local.path)
+save(alumnos.training, file="alumnos.training.R")
+save(alumnos.test, file="alumnos.test.R")
+```
+
+Note: that the `echo = FALSE` parameter was added to the code chunk to
 prevent printing of the R code that generated the plot.
