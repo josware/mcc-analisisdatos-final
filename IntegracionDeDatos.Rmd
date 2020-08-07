@@ -1,6 +1,6 @@
 ---
 title: "Proyecto Final - Analisis de Datos"
-author: "Anna Casillas"
+author: "Casillas, A., González, L., Gómez, J."
 date: "July 31,2020"
 output: rmarkdown::github_document
 ---

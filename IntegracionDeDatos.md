@@ -18,7 +18,7 @@ proyecto
 
 ``` r
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
+user.path <- "/Users/jos/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")

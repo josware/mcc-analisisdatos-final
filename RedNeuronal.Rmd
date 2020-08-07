@@ -179,6 +179,12 @@ alumnos.desertores.df
 ```
  
 ```{r}
+cor.matrix.desertores <- cor(alumnos.desertores.df, method = "pearson", use = "complete.obs")
+corrplot(cor.matrix.desertores)
+```
+ 
+ 
+```{r}
 a<- alumnos.desertores.df[alumnos.desertores.df$desercion == 1,]
 print("Rows and columns")
 print(dim(a))
