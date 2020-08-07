@@ -23,7 +23,7 @@ Aqui se especifican las variables generales necesarias para todo el proyecto
 
 ```{r}
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/jos/Downloads/mcc-analisisdatos-final"
+user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")

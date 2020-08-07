@@ -23,7 +23,7 @@ Aqui se especifican las variables generales necesarias para todo el proyecto
 
 ```{r}
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/jos/Downloads/mcc-analisisdatos-final"
+user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")
@@ -377,8 +377,84 @@ fitness.presupuesto.desercion <- function(x) {
     # if((x[3] + x[10] > 1)){
     #   partial.result <- items.s.p - (items$survivalpoints[3] + items$survivalpoints[10])
     # }
-    print(alumnos.desertores.df[1,]$beca)
-
+    alumnos.desertores.df[i,]
+    for(i in 1:desercion.size){
+      start <- 11*i-10
+      end <- 11*i
+      
+      #Regla 1 Si ya tiene Beca
+      if(alumnos.desertores.df[i,]$beca + x[start] > 2){
+        partial.result <- items.s.p - 90
+      }
+      
+      
+      #Regla 2 Si Bienevales Bit 2 (start+1 = 2)
+      if(alumnos.desertores.df[i,]$evalucion.socioeconomica + x[start+1] < 4){
+        partial.result <- items.s.p - 20
+      }else{
+        if(alumnos.desertores.df[i,]$Asist.Total < 0.6){
+          partial.result <- items.s.p + 20
+        }else{
+           partial.result <- items.s.p + 10
+        }
+      }
+      
+      #Regla 3 mentoria Bit 2 (start+2 = bit 3)
+      if(alumnos.desertores.df[i,]$prom.exam + x[start+2] > 10){
+        papartial.result <- items.s.p - 8
+      }
+      #Regla 4 Consultoría Psicológica Bit 4 (start+3 = bit 4)
+      if(alumnos.desertores.df[i,]$evalucion.socioeconomica + x[start+3] < 4){
+        papartial.result <- items.s.p - 30
+      }
+      #Regla 5 Boleto Evento integración Bit 5 (start+4 = bit 5)
+      if(alumnos.desertores.df[i,]$nota.conducta + x[start+4] < 17){
+        papartial.result <- items.s.p + 10
+      }
+      
+      #Regla 6 Asesoria individual 
+      if(mean(alumnos.desertores.df[i,]$prom.exam + alumnos.desertores.df[i,]$prom.trab) < 10){
+        if(x[start+3] == 0){
+          partial.result <- items.s.p + 60
+        }else{
+          partial.result <- items.s.p - 60
+        }
+      }
+      
+      #Reglas 7 Cursos remediales
+      if(alumnos.desertores.df[i,]$promedio.preparatoria < 80){
+         if(x[start+4] == 0){
+          partial.result <- items.s.p + 80
+        }else{
+          partial.result <- items.s.p - 80
+        }
+      }
+      
+      #Regla 8 Visita a emepresa
+      if(alumnos.desertores.df[i,]$cambio.carrera + x[start+5] > 2){
+         partial.result <- items.s.p + 100
+      }
+      
+      if(alumnos.desertores.df[i,]$cambio.carrera + x[start+5] <= 2){
+         partial.result <- items.s.p - 100
+      }
+      
+      #Regla 9 examen extra temp bit 9
+      if(alumnos.desertores.df[i,]$prom.exam + x[start+8] > 12){
+        partial.result <- items.s.p - v.s.p[9]
+      }
+      #Regla 10 platica motivacional 10 (start+1 = 2)
+      if(alumnos.desertores.df[i,]$Asist.Total + x[start+9] > 90){
+        partial.result <- items.s.p - v.s.p[10]
+      }
+      #Regla 11 mentoria altas calificaciones Bit 11 (start+10 = bit 11)
+      if(alumnos.desertores.df[i,]$prom.exam + x[start+10] > 15){
+        partial.result <- items.s.p - v.s.p[11]
+      }
+      
+      
+      
+    }#Fin de reglas
     return (-items.s.p)
   }
 }
@@ -394,9 +470,10 @@ ga.features
 ```{r}
 
 set.seed(2020)
-ga.tree <- rbga.bin(size = (ga.features * desercion.size), popSize = 2000,
+alumnos.desertores.df
+ga.tree <- rbga.bin(size = (ga.features * desercion.size), popSize = 100,
                     mutationChance = .01,
-                    elitism = 1, iters = 2,
+                    elitism = 1, iters = 15,
                     evalFunc = fitness.presupuesto.desercion,
                     verbose = T
                     )
@@ -411,12 +488,22 @@ printStats(best.anti.desertores)
 ```
 
 ```{r}
+#Old Output
+printStats(best.anti.desertores)
+```
+
+```{r}
 for(i in 1:desercion.size){
   start <- 11*i-10
-  end <- 11*i
+  end <- 11*is
   #print(i)
   print(best.anti.desertores[start:end])
-  }
+}
+
+alumnos.desertores.df$beca
+```
+```{r}
+alumnos.desertores.df
 ```
 
 
