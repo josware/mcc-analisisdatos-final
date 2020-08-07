@@ -362,6 +362,23 @@ fitness.presupuesto.desercion <- function(x) {
   else
   {
     partial.result <- items.s.p
+    # #"beca","bienevales","mentoria","psicologo","evento","asesor","remediales", "visita.empresa","extratemporaneo", "cheertalk", "viaje"
+    # #   1        2           3           4          5        6          7              8                  9               10        11
+    # #"beca","bienevales","mentoria","psicologo","evento","asesor","remediales", "visita.empresa","extratemporaneo", "cheertalk", "viaje"
+    # #   12        13           14           15          16        17          18       19                 20               21       22
+    # ##Encendedor  x[1] == 1 , Cerillos x[11] == 1 & Pedernal x[13] == 1
+    # ###Solo se vale llevar uno para hacer fuego, si no penalización
+    # if((x[1] + x[11] + x[13]) > 1){
+    #   partial.result <- items.s.p - (items$survivalpoints[1] + items$survivalpoints[11] + items$survivalpoints[13])
+    # }
+    # 
+    # ##Navaja  x[3] == 1 & Cuchillo x[10] == 1
+    # ###Solo se vale llevar un elemento punzo cortante, si no penalización
+    # if((x[3] + x[10] > 1)){
+    #   partial.result <- items.s.p - (items$survivalpoints[3] + items$survivalpoints[10])
+    # }
+    print(alumnos.desertores.df[1,]$beca)
+
     return (-items.s.p)
   }
 }
@@ -369,9 +386,15 @@ items
 ```
 
 ```{r}
+ga.features <- length(v.item)
+ga.features
+```
+
+
+```{r}
 
 set.seed(2020)
-ga.tree <- rbga.bin(size = 418, popSize = 2000,
+ga.tree <- rbga.bin(size = (ga.features * desercion.size), popSize = 2000,
                     mutationChance = .01,
                     elitism = 1, iters = 2,
                     evalFunc = fitness.presupuesto.desercion,
@@ -387,6 +410,14 @@ best.anti.desertores
 printStats(best.anti.desertores)
 ```
 
+```{r}
+for(i in 1:desercion.size){
+  start <- 11*i-10
+  end <- 11*i
+  #print(i)
+  print(best.anti.desertores[start:end])
+  }
+```
 
 
 
