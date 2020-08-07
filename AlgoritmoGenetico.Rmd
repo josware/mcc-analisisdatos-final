@@ -1,6 +1,6 @@
 ---
 title: "Proyecto Final - Algoritmo Genetico"
-author: "Anna Casillas"
+author: "Casillas, A., González, L., Gómez, J."
 date: "Agosto 3,2020"
 output: rmarkdown::github_document
 ---
@@ -41,13 +41,474 @@ col<- colorRampPalette(c("blue", "white", "red"))(20)
 #install.packages("FactoMineR")
 library(FactoMineR)
 library(factoextra)
+#install.packages("genalg")
+library("genalg")
 ```
 
 Cargamos los datos
 
 ```{r}
 setwd(local.path)
-load("alumnos.training.R")
+load("alumnos.desertores.df.R")
+
 ```
+
+```{r}
+alumnos.desertores.df
+```
+
+##Funciones de soporte
+```{r}
+getBest <- function(inTree) {
+  #outBest <- inTree$population[inTree$evaluations == min(inTree$best),][1,]
+  outBest <- inTree$population[inTree$evaluations == min(inTree$best),]
+  return (outBest)
+}  
+
+printStats <- function(inBest) {
+  out.sep <- "--------------------------------------------------------------------------------"
+  out.items.usd.ammount <- inBest %*% items$usd.ammount
+  out.stayingpoints  <- inBest %*% items$stayingpoints 
+  print(out.sep)
+  print("Vector: ")
+  print(inBest)
+  print(paste("Items USD sum: ", out.items.usd.ammount))
+  print(paste("Puntos de estadía de este vector: ", out.stayingpoints))
+  print(out.sep)
+  } 
+```
+
+
+## Función optimizada
+
+```{r}
+
+desercion.size <- 38
+budget.limit.10k <- 10000
+
+
+items <- data.frame(
+  item=c("beca","bienevales","mentoria","psicologo","evento",
+         "asesor","remediales", "visita.empresa","extratemporaneo", "cheertalk", 
+         "viaje"),
+  stayingpoints = c(90,95,85,70,50,
+                     60,80,100,80,85,
+                     70),
+  usd.ammount = c(500, 100, 200, 400, 50,
+             250, 2500, 50, 100, 50,
+             10)
+)
+
+fitness.presupuesto.desercion <- function(x) {
+
+    items.usd.ammount <- x %*% items$usd.ammount
+    items.s.p <- x %*% items$stayingpoints
+
+  if (items.usd.ammount > budget.limit.10k ) 
+  {
+    return(0)
+  }
+  else
+  {
+    partial.result <- items.s.p
+    # #Reglas: 
+    # ##J05
+    # ##Encendedor  x[1] == 1 , Cerillos x[11] == 1 & Pedernal x[13] == 1
+    # ###Solo se vale llevar uno para hacer fuego, si no penalización
+    # if((x[1] + x[11] + x[13]) > 1){
+    #   partial.result <- items.s.p - (items$survivalpoints[1] + items$survivalpoints[11] + items$survivalpoints[13])
+    # }
+    # ##Navaja  x[3] == 1 & Cuchillo x[10] == 1 
+    # ###Solo se vale llevar un elemento punzo cortante, si no penalización
+    # if((x[3] + x[10] > 1)){
+    #   partial.result <- items.s.p - (items$survivalpoints[3] + items$survivalpoints[10])
+    # }
+    # ##Linterna x[4] == 1 & Bat.extra x[12] == 1 
+    # ###Deben ir ambas, si no penalización
+    # if((x[4] + x[12] > 0) && (x[4] + x[12] < 2)){
+    #   partial.result <- items.s.p - (items$survivalpoints[4] + items$survivalpoints[12])
+    # }
+    # ##Cerveza x[22] == 1 , Hielos  x[24] == 1 , Leche x[37] == 1 & Hielera x[39] == 1
+    # ###Si llevas hielo y/o hielera, pero no los dos penalización
+    # if(((x[24] + x[39] > 0) && (x[24] + x[39] < 2))){
+    #   partial.result <- items.s.p - (items$survivalpoints[24] + items$survivalpoints[39])
+    #   ####Si aparte osaste llevar perecederos (cerveza y/o leche), penalización
+    #   if(x[22] == 1){items.s.p - items$survivalpoints[22]}
+    #   if(x[37] == 1){items.s.p - items$survivalpoints[37]}
+    # }
+    # ###Si llevas cerveza o leche y no llevas hielo y hielera penalización
+    # if(((x[22] + x[37] > 0) && (x[24] + x[39] < 2))){
+    #   partial.result <- items.s.p - (items$survivalpoints[22] + items$survivalpoints[37])
+    # }
+    # ##Anna
+    # #Lampara y no Baterias
+    # if((x[4] == 1) && (x[12] == 0)){ #Como la lampara se queda sin uso
+    #   partial.result <- partial.result - items$survivalpoints[4] # quitamos su peso por completo
+    # }
+    # #Bateria y no Lampara
+    # if((x[12] == 0) && (x[4] == 1)){ # La bateria se puede usar para otra cosas
+    #   partial.result <- partial.result - (items$survivalpoints[12]/2)# castigamos con quitando la mitad de puntos
+    # }
+    # #Arco y no flechas
+    # if((x[31] == 1) && (x[40] == 0)){ # como arco queda sin uso
+    #   partial.result <- partial.result - items$survivalpoints[31] # quitamos su peso por completo
+    # }
+    #  #Flechas y no Arco
+    # if((x[31] == 0) && (x[40] == 1)){ # las flechas aun pueden ser utiles para cortar cosas
+    #   partial.result <- partial.result - (items$survivalpoints[40]/2) # castigamos con quitando la mitad de puntos
+    # }
+    # #Pistola y no balas
+    # if((x[32] == 1) && (x[33] == 0)){ # como pistola queda sin uso
+    #   partial.result <- partial.result - (items$survivalpoints[33] + items$survivalpoints[32] * 3) # quitamos su peso por completo
+    # }
+    # #Balas y no Pistola
+    # if((x[33] == 1) && (x[32] == 0)){ # las balas aun pueden ser utiles para cortar cosas
+    #   partial.result <- partial.result - (items$survivalpoints[33] + items$survivalpoints[32] ) # castigamos con el total de puntos
+    # }
+    # #Leche y no Hielos/Hielera
+    # #if((x[37] == 1) && (x[24] == 0) && (x[39 ] == 0)){ 
+    # #  partial.result <- partial.result - items$survivalpoints[37] # castigamos con el total de puntos
+    # #}
+    # #Hielos/Hielera y no leche
+    # #if((x[37] == 10) && (x[24] == 1) && (x[39 ] == 1)){  # hielos y hielera se excluyen no tiene caso que esten 
+    # # partial.result <- partial.result - (items$survivalpoints[24]+items$survivalpoints[39]) # castigamos con  el total de puntos, hielos  + hilera pts 
+    # #}
+    # #excluir arco y pistola cuando estan ambos
+    # if((x[31] == 1) && (x[32] == 1)){
+    #   partial.result <- partial.result - (items$survivalpoints[31]+items$survivalpoints[32]+items$survivalpoints[33]+items$survivalpoints[40]) # castigamos con  el total de puntos de pistola + arco
+    # }
+    # 
+    # ##Luis
+    #     #=============
+    # #Realcion 6 (Brujula 7, mapa 30, gps 28)
+    # #=============
+    # #Brujula y GPS
+    # if((x[7]==1)&&(x[28]==1)){
+    #   partial.result <- partial.result - (items$survivalpoints[7] + items$survivalpoints[28]) #(80+90)
+    # }
+    # #Mapa y no Brujula/GPS
+    # if((x[30]==1) && (x[7]==0) && (x[29])==0 ){
+    #   partial.result <- partial.result - (items$survivalpoints[30] / 2) #(El mapa sirve sin la brújula ero más ineficiente)
+    # }
+    # #=============
+    # #Relaciones 8 (Cazuela 18, atun.kilo 9, pedernal 13, cerillos 11)
+    # #=============
+    # #Cerillos y Pedernal
+    # if((x[11]==1)&&(x[13]==1)){
+    #   partial.result <- partial.result - (items$survivalpoints[11] + items$survivalpoints[13])  #(70+80)
+    # }
+    # # Cazuela y Atun pero no Pedernal no Cerillos
+    # if((x[18]==1)&&(x[9]==1)&&(x[13]==0)&&(x[11]==0)){
+    #   partial.result <- partial.result - (items$survivalpoints[18] / 2) #(Cazuela pierde 50% utilidad)
+    # }
+    # # Atun y no Cazauela y no Pedernal no Cerillos
+    # if((x[9]==1)&&(x[18]==0)&&(x[13]==0)&&(x[11]==0)){
+    #   partial.result <- partial.result- (items$survivalpoints[9] / 2) #(Atún pierde 50% duncionalidad)
+    # }
+    # #=============
+    # #Relaciones 12 (Pedernal 13, Cuchillo 10, navaja 3)
+    # #==============
+    # #Pedernal y no cuchillo o no navaja
+    # if((x[13]==1)&&(x[10]==0)&&(x[3]==0)){
+    #   partial.result <- partial.result - (items$survivalpoints[13] / 2) #(Pedernal pierde 50% funcionalidad)
+    # }
+    # 
+    # #=============
+    # #Relaciones 9 (bat.extra 12, panales solares 29, celular.satelital 35, tablet 36.)
+    # #==============
+    # #Celular y no bateria, no panel solar
+    # if((x[35]==1)&&(x[12]==0)&&(x[29]==0)){
+    #   partial.result <- partial.result - (items$survivalpoints[35]/2) #(Celular pierde 50% funcionalidad)
+    # }
+    # #Tablet  y no bateria, no panel solar
+    # if((x[36]==1)&&(x[13]==0)&&(x[29]==0)){
+    #   partial.result <- partial.result - (items$survivalpoints[36]/2) #(Celular pierde 50% funcionalidad)
+    # }
+    # 
+    return (-items.s.p)
+  }
+}
+```
+
+
+```{r}
+
+set.seed(2020)
+ga.tree <- rbga.bin(size = 11, popSize = 5,
+                    mutationChance = .01,
+                    elitism = 1, iters = 2,
+                    evalFunc = fitness.presupuesto.desercion,
+                    verbose = T
+                    )
+
+#inTree$population[inTree$evaluations == min(inTree$best),][1,]
+ga.tree$population[ga.tree$evaluations == min(ga.tree$best),]
+# 
+# ga.tree$population
+
+
+# best.5 <- getBest(ga.tree)
+# best.5
+```
+
+```{r}
+ga.tree$evaluations
+```
+
+```{r}
+min(ga.tree$best)
+```
+```{r}
+best.i <- ga.tree$evaluations == min(ga.tree$best)
+```
+
+
+```{r}
+ga.tree$population[best.i,]
+```
+
+
+
+```{r}
+items <- data.frame(
+  item=c("beca"),stayingpoints = c(90), usd.ammount = c(500)
+)
+items
+```
+
+
+
+```{r}
+items <- cbind(items, "beca1", 90, 50)
+items
+```
+
+
+```{r}
+items
+```
+
+```{r}
+v.item <- c("beca","bienevales","mentoria","psicologo","evento",
+         "asesor","remediales", "visita.empresa","extratemporaneo", "cheertalk", 
+         "viaje")
+v.s.p <- c(90,95,85,70,50,60,80,100,80,85,70)
+v.usd = c(500, 100, 200, 400, 50,250, 2500, 50, 100, 50,10)
+
+```
+
+
+```{r}
+
+items <- data.frame(item= v.item,
+                    stayingpoints = v.s.p,
+                    usd.ammount = v.usd)
+items
+```
+
+
+```{r}
+for(i in 1:5){
+items <- cbind(items, v.item, v.s.p , v.usd)  
+}
+
+items
+```
+
+```{r}
+#setwd(local.path)
+#load("alumnos.desertores.df.R")
+#dim(alumnos.desertores.df)
+nrow(alumnos.desertores.df)
+```
+
+
+```{r}
+
+#Constantes / constraints
+desercion.size <- nrow(alumnos.desertores.df)
+budget.limit.10k <- 10000
+
+#Vectores
+v.item <- c("beca","bienevales","mentoria","psicologo","evento",
+         "asesor","remediales", "visita.empresa","extratemporaneo", "cheertalk", 
+         "viaje")
+v.s.p <- c(90,95,85,70,50,60,80,100,80,85,70)
+v.usd = c(500, 100, 200, 400, 50,250, 2500, 50, 100, 50,10)
+
+#Inicializar 
+items <- data.frame(item= v.item,
+                    stayingpoints = v.s.p,
+                    usd.ammount = v.usd)
+#Igualar dimensión
+for(i in 1:(desercion.size-1)){
+  items <- rbind(items,data.frame(item= v.item,
+                    stayingpoints = v.s.p,
+                    usd.ammount = v.usd))  
+  
+  #Si fuera por columna:
+  #  items <- cbind(items, v.item, v.s.p , v.usd)
+}
+
+fitness.presupuesto.desercion <- function(x) {
+
+    items.usd.ammount <- x %*% items$usd.ammount
+    items.s.p <- x %*% items$stayingpoints
+
+  if (items.usd.ammount > budget.limit.10k ) 
+  {
+    return(0)
+  }
+  else
+  {
+    partial.result <- items.s.p
+    # #"beca","bienevales","mentoria","psicologo","evento","asesor","remediales", "visita.empresa","extratemporaneo", "cheertalk", "viaje"
+    # #   1        2           3           4          5        6          7              8                  9               10        11
+    # #"beca","bienevales","mentoria","psicologo","evento","asesor","remediales", "visita.empresa","extratemporaneo", "cheertalk", "viaje"
+    # #   12        13           14           15          16        17          18       19                 20               21       22
+    # ##Encendedor  x[1] == 1 , Cerillos x[11] == 1 & Pedernal x[13] == 1
+    # ###Solo se vale llevar uno para hacer fuego, si no penalización
+    # if((x[1] + x[11] + x[13]) > 1){
+    #   partial.result <- items.s.p - (items$survivalpoints[1] + items$survivalpoints[11] + items$survivalpoints[13])
+    # }
+    # 
+    # ##Navaja  x[3] == 1 & Cuchillo x[10] == 1
+    # ###Solo se vale llevar un elemento punzo cortante, si no penalización
+    # if((x[3] + x[10] > 1)){
+    #   partial.result <- items.s.p - (items$survivalpoints[3] + items$survivalpoints[10])
+    # }
+    alumnos.desertores.df[i,]
+    for(i in 1:desercion.size){
+      start <- 11*i-10
+      end <- 11*i
+      
+      #Regla 1 Si ya tiene Beca
+      if(alumnos.desertores.df[i,]$beca + x[start] > 2){
+        partial.result <- items.s.p - 90
+      }
+      
+      
+      #Regla 2 Si Bienevales Bit 2 (start+1 = 2)
+      if(alumnos.desertores.df[i,]$evalucion.socioeconomica + x[start+1] < 4){
+        partial.result <- items.s.p - 20
+      }else{
+        if(alumnos.desertores.df[i,]$Asist.Total < 0.6){
+          partial.result <- items.s.p + 20
+        }else{
+           partial.result <- items.s.p + 10
+        }
+      }
+      
+      #Regla 3 mentoria Bit 2 (start+2 = bit 3)
+      if(alumnos.desertores.df[i,]$prom.exam + x[start+2] > 10){
+        papartial.result <- items.s.p - 8
+      }
+      #Regla 4 Consultoría Psicológica Bit 4 (start+3 = bit 4)
+      if(alumnos.desertores.df[i,]$evalucion.socioeconomica + x[start+3] < 4){
+        papartial.result <- items.s.p - 30
+      }
+      #Regla 5 Boleto Evento integración Bit 5 (start+4 = bit 5)
+      if(alumnos.desertores.df[i,]$nota.conducta + x[start+4] < 17){
+        papartial.result <- items.s.p + 10
+      }
+      
+      #Regla 6 Asesoria individual 
+      if(mean(alumnos.desertores.df[i,]$prom.exam + alumnos.desertores.df[i,]$prom.trab) < 10){
+        if(x[start+3] == 0){
+          partial.result <- items.s.p + 60
+        }else{
+          partial.result <- items.s.p - 60
+        }
+      }
+      
+      #Reglas 7 Cursos remediales
+      if(alumnos.desertores.df[i,]$promedio.preparatoria < 80){
+         if(x[start+4] == 0){
+          partial.result <- items.s.p + 80
+        }else{
+          partial.result <- items.s.p - 80
+        }
+      }
+      
+      #Regla 8 Visita a emepresa
+      if(alumnos.desertores.df[i,]$cambio.carrera + x[start+5] > 2){
+         partial.result <- items.s.p + 100
+      }
+      
+      if(alumnos.desertores.df[i,]$cambio.carrera + x[start+5] <= 2){
+         partial.result <- items.s.p - 100
+      }
+      
+      #Regla 9 examen extra temp bit 9
+      if(alumnos.desertores.df[i,]$prom.exam + x[start+8] > 12){
+        partial.result <- items.s.p - v.s.p[9]
+      }
+      #Regla 10 platica motivacional 10 (start+1 = 2)
+      if(alumnos.desertores.df[i,]$Asist.Total + x[start+9] > 90){
+        partial.result <- items.s.p - v.s.p[10]
+      }
+      #Regla 11 mentoria altas calificaciones Bit 11 (start+10 = bit 11)
+      if(alumnos.desertores.df[i,]$prom.exam + x[start+10] > 15){
+        partial.result <- items.s.p - v.s.p[11]
+      }
+      
+      
+      
+    }#Fin de reglas
+    return (-items.s.p)
+  }
+}
+items
+```
+
+```{r}
+ga.features <- length(v.item)
+ga.features
+```
+
+
+```{r}
+
+set.seed(2020)
+alumnos.desertores.df
+ga.tree <- rbga.bin(size = (ga.features * desercion.size), popSize = 100,
+                    mutationChance = .01,
+                    elitism = 1, iters = 15,
+                    evalFunc = fitness.presupuesto.desercion,
+                    verbose = T
+                    )
+
+#ga.tree$population[ga.tree$evaluations == min(ga.tree$best),]
+best.anti.desertores <- getBest(ga.tree)
+best.anti.desertores
+```
+
+```{r}
+printStats(best.anti.desertores)
+```
+
+```{r}
+#Old Output
+printStats(best.anti.desertores)
+```
+
+```{r}
+for(i in 1:desercion.size){
+  start <- 11*i-10
+  end <- 11*is
+  #print(i)
+  print(best.anti.desertores[start:end])
+}
+
+alumnos.desertores.df$beca
+```
+```{r}
+alumnos.desertores.df
+```
+
+
+
+
+
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

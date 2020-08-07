@@ -1,6 +1,6 @@
 ---
 title: "Proyecto Final - Red neuronal"
-author: "Anna Casillas"
+author: "Casillas, A., González, L., Gómez, J."
 date: "Agosto 2,2020"
 output: rmarkdown::github_document
 ---
@@ -22,7 +22,7 @@ Aqui se especifican las variables generales necesarias para todo el proyecto
 
 ```{r}
 #Modificar variable para especificar directorio del Proyecto Final
-user.path <- "/Users/jos/Downloads/mcc-analisisdatos-final"
+user.path <- "/Users/akcasill/Documents/analisisDatos/proyecto/mcc-analisisdatos-final"
 
 local.path <- paste(user.path ,"/data",sep = "")
 local.path.imgs <- paste(user.path ,"/imgs",sep = "")
@@ -49,10 +49,10 @@ Cargamos los datos
 ```{r}
 setwd(local.path)
 load("alumnos.training.R")
-#alumnos.training
+alumnos.training
 head(alumnos.training,3)
 load("alumnos.test.R")
-#alumnos.test
+alumnos.test
 head(alumnos.test,3)
 
 ```
@@ -177,6 +177,22 @@ alumnos.desertores.df <- cbind(alumnos.nuevos, desercion)
 alumnos.desertores.df
 
 ```
+ 
+```{r}
+cor.matrix.desertores <- cor(alumnos.desertores.df, method = "pearson", use = "complete.obs")
+corrplot(cor.matrix.desertores)
+```
+ 
+ 
+```{r}
+a<- alumnos.desertores.df[alumnos.desertores.df$desercion == 1,]
+print("Rows and columns")
+print(dim(a))
+```
+```{r}
+alumnos.desertores.df <- a
+```
+ 
  
 ## Seleccionar alumnos que se predicen van a reprobar 
 ```{r}
